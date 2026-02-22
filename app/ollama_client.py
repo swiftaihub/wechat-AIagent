@@ -21,7 +21,7 @@ OLLAMA_WARMUP_ON_STARTUP = os.getenv("OLLAMA_WARMUP_ON_STARTUP", "1").strip() no
 OLLAMA_WARMUP_TIMEOUT_SECONDS = float(os.getenv("OLLAMA_WARMUP_TIMEOUT_SECONDS", "15"))
 
 
-def _build_payload(model: str, prompt: str) -> dict[str, Any]:
+def _build_payload(model: str, prompt: str, response_format: str | None = None) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "model": model,
         "prompt": prompt,
@@ -34,13 +34,15 @@ def _build_payload(model: str, prompt: str) -> dict[str, Any]:
     }
     if OLLAMA_KEEP_ALIVE:
         payload["keep_alive"] = OLLAMA_KEEP_ALIVE
+    if response_format:
+        payload["format"] = response_format
     return payload
 
 
-async def ollama_chat(*, system_prompt: str, user_prompt: str) -> str:
+async def ollama_chat(*, system_prompt: str, user_prompt: str, response_format: str | None = None) -> str:
     final_prompt = f"{system_prompt.strip()}\n\n{user_prompt.strip()}".strip()
     active_model = OLLAMA_MODEL.strip()
-    payload = _build_payload(active_model, final_prompt)
+    payload = _build_payload(active_model, final_prompt, response_format=response_format)
     url = f"{OLLAMA_BASE_URL}/api/generate"
 
     async with httpx.AsyncClient(timeout=OPENCLAW_REPLY_TIMEOUT_SECONDS) as client:
