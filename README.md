@@ -67,6 +67,7 @@ Request flow:
 |   |-- ollama_client.py
 |   |-- prompt_runtime.py
 |   |-- guardrail.py
+|   |-- web_ui.py
 |   `-- tools/
 |       |-- advice_table.py
 |       |-- executor.py
@@ -78,14 +79,16 @@ Request flow:
 |   |-- config.yml
 |   |-- credentials.json
 |-- docs/
-|   `-- prompt-guardrail-security.md
+|   |-- prompt-guardrail-security.md
+|   `-- deploy.md
 |-- tests/
 |   |-- test_prompt_runtime.py
 |   |-- test_guardrail.py
 |   |-- test_tool_call_parsing.py
 |   |-- test_advice_table_match.py
 |   |-- test_llm_core_fallback.py
-|   `-- test_memory_store.py
+|   |-- test_memory_store.py
+|   `-- test_web_ui.py
 |-- docker-compose.yml
 |-- Dockerfile
 `-- requirements.txt
@@ -136,6 +139,14 @@ OPENCLAW_MEMORY_MAX_MESSAGE_CHARS=240
 OPENCLAW_MEMORY_MAX_HISTORY_CHARS=1200
 
 PORT=8787
+WEBUI_HOST_BIND=127.0.0.1
+WEBUI_HOST_PORT=8788
+WEBUI_BASE_PATH=/ui
+WEBUI_TITLE=OpenClaw Chat
+WEBUI_WELCOME_MESSAGE=Welcome. Tell me your situation and I will provide practical wellness guidance.
+WEBUI_API_BASE_URL=
+WEBUI_CORS_ALLOWED_ORIGINS=
+
 OPENCLAW_REPLY_TIMEOUT_SECONDS=5
 WECHAT_SYNC_TIMEOUT_TEXT=系统服务器正忙，请稍后再试
 WECHAT_SYNC_ERROR_TEXT=Service is temporarily busy. Please try again later.
@@ -146,6 +157,24 @@ Notes:
 - This code currently handles plain text callback mode (not encrypted callback decryption).
 - If your current model name in `.env` does not exist in Ollama, pull an available model and update `OLLAMA_MODEL`.
 - Short-term memory is process-local and keyed by `user_id` (memory is reset after service restart).
+- If Web UI and API are deployed on different domains, set `WEBUI_CORS_ALLOWED_ORIGINS` as a comma-separated allowlist.
+
+## Web UI Product Mode
+
+- Responsive chat-first layout for desktop and mobile (including iPhone-width screens).
+- Hamburger drawer for conversation actions:
+  - New chat / clear messages
+  - Export conversation as `.txt` or `.json`
+  - Toggle timestamps and light/dark theme
+- Keyboard UX:
+  - `Enter` sends message
+  - `Shift+Enter` inserts new line
+- Runtime configuration:
+  - `WEBUI_BASE_PATH` controls the mounted UI route prefix (default `/ui`)
+  - `WEBUI_WELCOME_MESSAGE` controls initial greeting
+  - `WEBUI_TITLE` controls UI title
+  - `WEBUI_API_BASE_URL` overrides chat API endpoint (default `${WEBUI_BASE_PATH}/api/chat`)
+  - `WEBUI_CORS_ALLOWED_ORIGINS` restricts cross-origin requests when needed
 
 ## Short-Term Memory
 
@@ -243,19 +272,32 @@ docker compose up -d --build
 
 ```bash
 docker compose ps
-docker compose logs -f openclaw
+docker compose logs -f wechat-mp
 ```
 
 ### 3. Verify app health
 
 ```bash
-curl http://localhost:8787/health
+curl http://localhost:8788/health
 ```
 
 Expected:
 
 ```json
 {"ok": true}
+```
+
+### 4. Open product Web UI
+
+```text
+http://localhost:8788/ui
+```
+
+### 5. Single-container run (without compose)
+
+```bash
+docker build -t wechat-aiagent:latest .
+docker run --rm -p 8788:8787 --env-file .env wechat-aiagent:latest
 ```
 
 ## Ollama in Docker: Pull and Manage Models
@@ -368,8 +410,8 @@ curl -X POST http://localhost:8787/wechat/menu
 - `GET /wechat`: WeChat URL verification
 - `POST /wechat`: WeChat message callback
 - `POST /wechat/menu`: create custom menu via WeChat API
-- `GET /ui`: local web chat UI for manual testing
-- `POST /ui/api/chat`: UI chat API (calls `generate_reply` directly)
+- `GET ${WEBUI_BASE_PATH}`: local web chat UI for manual testing (default `GET /ui`)
+- `POST ${WEBUI_BASE_PATH}/api/chat`: UI chat API (calls `generate_reply` directly)
 
 ## Local Web UI Testing
 
@@ -381,6 +423,14 @@ After startup, open:
 - `http://localhost:8787/ui` (same app route)
 
 This helps validate prompt/tool/guardrail behavior without waiting for WeChat callback windows.
+
+## Cloud Deployment Guides
+
+Production deployment playbooks are in `docs/deploy.md`, including:
+
+- VPS deployment with Docker + Nginx reverse proxy + HTTPS.
+- PaaS deployment with Render (Web Service).
+- PaaS deployment with Fly.io (Machines/Apps).
 
 ## Troubleshooting
 
