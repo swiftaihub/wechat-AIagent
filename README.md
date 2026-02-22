@@ -1,4 +1,4 @@
-# OpenClaw WeChat MP Gateway
+﻿# WeChat AI Agent MP Gateway
 
 FastAPI gateway that connects a WeChat Official Account (gong zhong hao) with LLM running on Ollama.
 
@@ -6,7 +6,36 @@ This repo provides:
 - WeChat callback verification (`GET /wechat`)
 - WeChat message handling (`POST /wechat`)
 - LLM reply generation via Ollama
+- Optional tool-calling pipeline with local table-driven advice + handoff output
 - Docker Compose deployment for both `wechat-mp` app and `cloudflared` service
+
+
+Production-ready FastAPI gateway for WeChat Official Accounts with local LLM inference (Ollama), private prompt governance, tool-calling orchestration, and short-term memory for multi-turn conversations.
+
+## Why This Project
+
+- Local-first architecture: run inference on Ollama, reduce external dependency and data exposure.
+- Prompt and policy separation: keep private prompt/guardrail logic outside public git history.
+- Structured tool-calling: planner JSON -> local tool execution -> constrained final answer.
+- Operational safety: input/output guardrails, timeout fallback, and deterministic handoff validation.
+- Better conversational quality: per-user short-term memory with configurable turn window and TTL.
+
+## Key Features
+
+- Runtime prompt management (`prompt.private.yaml` / `prompt.example.yaml`) with profile-based routing.
+- Tool calling with strict JSON contract and local executors in `app/tools/`.
+- Table-driven recommendation design (advice/scoring/herbal YAML) for maintainable domain logic.
+- Short-term memory (`app/memory_store.py`) injected as `recent_history` into prompt context.
+- WeChat passive sync reply workflow with timeout/error fallback controls.
+- Local Web UI for rapid testing (`/ui`) before publishing to WeChat traffic.
+
+## Example Use Cases
+
+- TCM wellness assistant for WeChat Official Accounts (constitution tendency + herbal guidance).
+- Clinic/medical aesthetic pre-consult workflow (intent match + questionnaire/address/contact handoff).
+- Herbal retail consultation assistant with controlled compliance messaging and traceable handoff.
+- Enterprise service desk on WeChat for domain-limited Q&A with strict out-of-scope refusal policy.
+- Rapid prototype for private LLM gateway projects that need prompt secrecy and local tool orchestration.
 
 ## Architecture
 
@@ -21,8 +50,9 @@ This repo provides:
 Request flow:
 1. WeChat sends message callback to `/wechat`.
 2. App validates signature using `WECHAT_TOKEN`.
-3. App sends prompt to Ollama (`OLLAMA_BASE_URL` + `OLLAMA_MODEL`).
-4. App returns XML reply to WeChat.
+3. App runs input guardrail and prompt rendering.
+4. If `TOOL_CALLING_ENABLED=1`, app does planner JSON -> local tool execution -> final answer generation.
+5. App runs output guardrail and returns XML reply to WeChat.
 
 ## Project Structure
 
@@ -33,11 +63,17 @@ Request flow:
 |   |-- wechat.py
 |   |-- wechat_token.py
 |   |-- llm_core.py
+|   |-- memory_store.py
 |   |-- ollama_client.py
 |   |-- prompt_runtime.py
-|   `-- guardrail.py
+|   |-- guardrail.py
+|   `-- tools/
+|       |-- advice_table.py
+|       |-- executor.py
+|       `-- registry.py
 |-- config/
-|   `-- prompt.example.yaml
+|   |-- prompt.example.yaml
+|   `-- advice_table.example.yaml
 |-- cloudflared/
 |   |-- config.yml
 |   |-- credentials.json
@@ -45,7 +81,11 @@ Request flow:
 |   `-- prompt-guardrail-security.md
 |-- tests/
 |   |-- test_prompt_runtime.py
-|   `-- test_guardrail.py
+|   |-- test_guardrail.py
+|   |-- test_tool_call_parsing.py
+|   |-- test_advice_table_match.py
+|   |-- test_llm_core_fallback.py
+|   `-- test_memory_store.py
 |-- docker-compose.yml
 |-- Dockerfile
 `-- requirements.txt
@@ -80,17 +120,49 @@ OLLAMA_WARMUP_TIMEOUT_SECONDS=15
 PROMPT_PROFILE=wechat
 PROMPT_CONFIG_PATH=config/prompt.private.yaml
 PROMPT_EXAMPLE_PATH=config/prompt.example.yaml
+TOOL_CALLING_ENABLED=1
+TOOL_CALL_CONFIDENCE_THRESHOLD=0.55
+TOOL_CALL_PLANNER_PROFILE=wechat_tool_planner
+TOOL_CALL_FINAL_PROFILE=wechat_tool_final
+TOOL_LOG_TEXT_PREVIEW_CHARS=80
+TOOL_LOG_JSON_PREVIEW_CHARS=300
+ADVICE_TABLE_PATH=config/advice_table.private.yaml
+ADVICE_TABLE_EXAMPLE_PATH=config/advice_table.example.yaml
+ADVICE_TABLE_MAX_MATCHES=3
+OPENCLAW_MEMORY_ENABLED=1
+OPENCLAW_MEMORY_MAX_TURNS=4
+OPENCLAW_MEMORY_TTL_SECONDS=1800
+OPENCLAW_MEMORY_MAX_MESSAGE_CHARS=240
+OPENCLAW_MEMORY_MAX_HISTORY_CHARS=1200
 
 PORT=8787
 OPENCLAW_REPLY_TIMEOUT_SECONDS=5
-WECHAT_SYNC_TIMEOUT_TEXT=回复生成超时，请稍后再试。
-WECHAT_SYNC_ERROR_TEXT=服务暂时繁忙，请稍后再试。
+WECHAT_SYNC_TIMEOUT_TEXT=系统服务器正忙，请稍后再试
+WECHAT_SYNC_ERROR_TEXT=Service is temporarily busy. Please try again later.
 ```
 
 Notes:
 - `WECHAT_TOKEN` must exactly match the token configured in WeChat platform.
 - This code currently handles plain text callback mode (not encrypted callback decryption).
 - If your current model name in `.env` does not exist in Ollama, pull an available model and update `OLLAMA_MODEL`.
+- Short-term memory is process-local and keyed by `user_id` (memory is reset after service restart).
+
+## Short-Term Memory
+
+This project now supports short-term conversation memory.
+
+- Storage: in-process memory (`app/memory_store.py`)
+- Scope: per `user_id`
+- Retention: TTL + max turn window
+- Prompt injection: `context.recent_history`
+
+Tune in `.env`:
+
+- `OPENCLAW_MEMORY_ENABLED`
+- `OPENCLAW_MEMORY_MAX_TURNS`
+- `OPENCLAW_MEMORY_TTL_SECONDS`
+- `OPENCLAW_MEMORY_MAX_MESSAGE_CHARS`
+- `OPENCLAW_MEMORY_MAX_HISTORY_CHARS`
 
 ## Prompt and Guardrail Separation
 
@@ -111,6 +183,22 @@ Fill only your local `config/prompt.private.yaml` with private prompt content an
 Do not commit this file.
 
 See `docs/prompt-guardrail-security.md` for architecture, lifecycle, and CI/CD protections.
+
+## Tool Calling and Advice Table
+
+This project supports a two-stage tool-calling pipeline with strict JSON planner output:
+
+- Planner profile: `wechat_tool_planner` (must return JSON only)
+- Tool executor: local tools in `app/tools/`
+- Final profile: `wechat_tool_final` (consumes `[Tool Result]`)
+
+Advice table loading priority:
+1. `ADVICE_TABLE_PATH`
+2. `config/advice_table.private.yaml`
+3. `ADVICE_TABLE_EXAMPLE_PATH` (default `config/advice_table.example.yaml`)
+
+Keep private table data in `config/advice_table.private.yaml` (git ignored).
+Only commit `config/advice_table.example.yaml` template data.
 
 ## Run Tests
 
@@ -280,6 +368,19 @@ curl -X POST http://localhost:8787/wechat/menu
 - `GET /wechat`: WeChat URL verification
 - `POST /wechat`: WeChat message callback
 - `POST /wechat/menu`: create custom menu via WeChat API
+- `GET /ui`: local web chat UI for manual testing
+- `POST /ui/api/chat`: UI chat API (calls `generate_reply` directly)
+
+## Local Web UI Testing
+
+You can test your pipeline locally with a browser UI similar to chat apps.
+
+After startup, open:
+
+- `http://localhost:8788/ui` (recommended UI entry)
+- `http://localhost:8787/ui` (same app route)
+
+This helps validate prompt/tool/guardrail behavior without waiting for WeChat callback windows.
 
 ## Troubleshooting
 

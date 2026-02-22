@@ -42,6 +42,33 @@ class GuardrailEngineTests(unittest.TestCase):
 
         self.assertEqual(sanitized, "BLOCKED_OUT")
 
+    def test_prescription_pattern_allows_negated_disclaimer_and_basic_dosage(self) -> None:
+        settings = GuardrailSettings(
+            blocked_output_patterns=(
+                r"(?i)((开具|开出|(?<!不)给出|(?<!不)提供|制定|执行|按方).{0,8}(处方|药方|方剂)|处方如下|药方如下|方剂如下|抓药方案|按方抓药|联合用药方案|配伍方案)",
+            ),
+            blocked_response="BLOCKED_OUT",
+        )
+        engine = GuardrailEngine(settings)
+
+        sanitized = engine.sanitize_output("不做疾病诊断，不给出处方。可参考西洋参2g、麦冬6g。")
+
+        self.assertNotEqual(sanitized, "BLOCKED_OUT")
+        self.assertIn("西洋参2g", sanitized)
+
+    def test_prescription_pattern_blocks_explicit_prescription_instruction(self) -> None:
+        settings = GuardrailSettings(
+            blocked_output_patterns=(
+                r"(?i)((开具|开出|(?<!不)给出|(?<!不)提供|制定|执行|按方).{0,8}(处方|药方|方剂)|处方如下|药方如下|方剂如下|抓药方案|按方抓药|联合用药方案|配伍方案)",
+            ),
+            blocked_response="BLOCKED_OUT",
+        )
+        engine = GuardrailEngine(settings)
+
+        sanitized = engine.sanitize_output("建议按方抓药，以下为药方如下：A药10g，B药8g。")
+
+        self.assertEqual(sanitized, "BLOCKED_OUT")
+
 
 if __name__ == "__main__":
     unittest.main()

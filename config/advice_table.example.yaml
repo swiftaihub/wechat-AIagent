@@ -1,0 +1,47 @@
+version: 1
+items:
+  - id: "dental_veneers"
+    title: "Dental veneer consultation"
+    keywords: ["veneer", "veneers", "dental esthetic", "teeth whitening", "ceramic veneer"]
+    triggers:
+      - any: ["veneer", "veneers"]
+      - all: ["teeth", "whitening"]
+    advice: |
+      Confirm whether the user goal is cosmetic or restorative first.
+      Veneer suitability usually depends on occlusion, enamel condition, and periodontal status.
+    handoffs:
+      - type: "questionnaire"
+        label: "Veneer Intake Form"
+        url: "https://example.com/forms/veneers"
+      - type: "address"
+        label: "Example Clinic"
+        address: "123 Main St, Newark, DE"
+      - type: "contact"
+        label: "Booking Line"
+        phone: "+1-302-555-0101"
+    followup_questions:
+      - "Do you care more about color improvement or shape restoration?"
+      - "Do you have gum bleeding, periodontal issues, or bite discomfort?"
+    safety:
+      disclaimer: "General information only, not a diagnosis. Seek in-person care for severe pain or bleeding."
+
+  - id: "orthodontic_alignment"
+    title: "Orthodontic alignment consultation"
+    keywords: ["braces", "aligner", "invisalign", "tooth crowding"]
+    triggers:
+      - any: ["braces", "aligner", "crowding"]
+    advice: |
+      Clarify chief concerns, treatment expectations, and current oral hygiene status.
+      Alignment planning should consider bite relationship and long-term retention.
+    handoffs:
+      - type: "questionnaire"
+        label: "Alignment Intake Form"
+        url: "https://example.com/forms/alignment"
+      - type: "contact"
+        label: "Consult Desk"
+        phone: "+1-302-555-0102"
+    followup_questions:
+      - "Have you had previous orthodontic treatment?"
+      - "Are you mainly concerned about crowding, spacing, or bite relationship?"
+    safety:
+      disclaimer: "General information only, not a diagnosis."
