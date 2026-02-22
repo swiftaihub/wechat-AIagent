@@ -13,6 +13,40 @@ profiles:
       [User Message]
       {user_text}
 
+  wechat_tool_planner:
+    system_prompt: |
+      <TOOL_PLANNER_SYSTEM_PROMPT_PLACEHOLDER>
+    user_prompt_template: |
+      [Available Tools]
+      {tools_json}
+
+      [Context]
+      user_id: {user_id}
+      {context_block}
+
+      [User Message]
+      {user_text}
+
+      [Instruction]
+      Return one JSON object only.
+
+  wechat_tool_final:
+    system_prompt: |
+      <TOOL_FINAL_SYSTEM_PROMPT_PLACEHOLDER>
+    user_prompt_template: |
+      [Context]
+      user_id: {user_id}
+      {context_block}
+
+      [User Message]
+      {user_text}
+
+      [Tool Call]
+      {tool_call_json}
+
+      [Tool Result]
+      {tool_result_json}
+
   default:
     system_prompt: |
       <DEFAULT_SYSTEM_PROMPT_PLACEHOLDER>

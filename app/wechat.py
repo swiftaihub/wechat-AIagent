@@ -17,13 +17,24 @@ DEFAULT_REPLY_TIMEOUT_SECONDS = float(os.getenv("OPENCLAW_REPLY_TIMEOUT_SECONDS"
 
 WECHAT_SYNC_TIMEOUT_TEXT = os.getenv(
     "WECHAT_SYNC_TIMEOUT_TEXT",
-    "\u56de\u590d\u751f\u6210\u8d85\u65f6\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002",
+    "\u7cfb\u7edf\u670d\u52a1\u5668\u6b63\u5fd9\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5",
 )
 
 WECHAT_SYNC_ERROR_TEXT = os.getenv(
     "WECHAT_SYNC_ERROR_TEXT",
     "\u670d\u52a1\u6682\u65f6\u7e41\u5fd9\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002",
 )
+
+
+def _is_timeout_like_error(exc: Exception) -> bool:
+    if isinstance(exc, (asyncio.TimeoutError, httpx.TimeoutException)):
+        return True
+
+    if isinstance(exc, httpx.HTTPStatusError) and exc.response is not None:
+        if exc.response.status_code >= 500:
+            return True
+
+    return False
 
 
 def _validate_wechat_signature(signature: str, timestamp: str, nonce: str) -> None:
@@ -83,12 +94,13 @@ async def wechat_message(request: Request, signature: str, timestamp: str, nonce
             generate_reply(user_id=from_user, text=user_text),
             timeout=DEFAULT_REPLY_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError:
-        logger.warning("OpenClaw sync reply timeout for user %s", from_user)
-        reply_text = WECHAT_SYNC_TIMEOUT_TEXT
     except Exception as exc:
-        logger.warning("Failed to generate OpenClaw sync reply for user %s: %s", from_user, exc)
-        reply_text = WECHAT_SYNC_ERROR_TEXT
+        if _is_timeout_like_error(exc):
+            logger.warning("OpenClaw sync timeout-like failure for user %s: %s", from_user, exc)
+            reply_text = WECHAT_SYNC_TIMEOUT_TEXT
+        else:
+            logger.warning("Failed to generate OpenClaw sync reply for user %s: %s", from_user, exc)
+            reply_text = WECHAT_SYNC_ERROR_TEXT
 
     reply = create_reply(reply_text, msg)
     return Response(content=reply.render(), media_type="application/xml")

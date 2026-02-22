@@ -13,6 +13,7 @@ services:
       - ./config:/srv/config:ro
     ports:
       - "127.0.0.1:8787:8787"
+      - "127.0.0.1:8788:8787"
     restart: unless-stopped
 
   cloudflared:
