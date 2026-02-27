@@ -16,6 +16,7 @@ class WebUiTests(unittest.TestCase):
         resp = self.client.get(webui_base_path)
         self.assertEqual(resp.status_code, 200)
         self.assertIn("const CONFIG", resp.text)
+        self.assertIn("const INTAKE_CONFIG", resp.text)
         self.assertIn("Menu", resp.text)
 
     def test_html_page_includes_runtime_welcome_message(self) -> None:

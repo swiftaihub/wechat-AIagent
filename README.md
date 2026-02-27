@@ -145,6 +145,7 @@ WEBUI_BASE_PATH=/ui
 WEBUI_TITLE=OpenClaw Chat
 WEBUI_WELCOME_MESSAGE=Welcome. Tell me your situation and I will provide practical wellness guidance.
 WEBUI_API_BASE_URL=
+WEBUI_INTAKE_CONFIG_PATH=config/questionaire.private.yaml
 WEBUI_CORS_ALLOWED_ORIGINS=
 
 OPENCLAW_REPLY_TIMEOUT_SECONDS=5
@@ -174,6 +175,7 @@ Notes:
   - `WEBUI_WELCOME_MESSAGE` controls initial greeting
   - `WEBUI_TITLE` controls UI title
   - `WEBUI_API_BASE_URL` overrides chat API endpoint (default `${WEBUI_BASE_PATH}/api/chat`)
+  - `WEBUI_INTAKE_CONFIG_PATH` points to intake form private YAML (default `config/questionaire.private.yaml`)
   - `WEBUI_CORS_ALLOWED_ORIGINS` restricts cross-origin requests when needed
 
 ## Short-Term Memory
