@@ -6,6 +6,8 @@ from pathlib import Path
 
 from app.tools.constitution_advice import (
     assess_constitution_and_recommend_herbs,
+    extract_recent_discomfort_option_values,
+    load_herbal_advice_config,
     reload_constitution_advice_configs,
 )
 
@@ -205,6 +207,101 @@ class ConstitutionAdviceToolTests(unittest.TestCase):
             self.assertEqual(result["herbal_recommendations"][0]["id"], "acne_case")
             self.assertEqual(result["followup_questions"], [])
             self.assertEqual(result["reasons"][0]["kind"], "direct_symptom_match")
+
+    def test_extract_recent_discomfort_option_values_uses_first_symptom_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            advice_path = Path(tmpdir) / "herbal_advice.private.yaml"
+            advice_path.write_text(
+                textwrap.dedent(
+                    """
+                    safety_disclaimer: "for test"
+                    constitution_recommendations:
+                      - id: case_a
+                        constitution: c1
+                        title: "Case A"
+                        symptoms: [fatigue, restless sleep, dry mouth]
+                        herbs: [herb_a]
+                        usage: "daily"
+                      - id: case_b
+                        constitution: c2
+                        title: "Case B"
+                        symptoms: [cold hands, loose stool]
+                        herbs: [herb_b]
+                        usage: "daily"
+                      - id: case_c
+                        constitution: c3
+                        title: "Case C"
+                        symptoms: [fatigue, headache]
+                        herbs: [herb_c]
+                        usage: "daily"
+                    """
+                ).strip()
+                + "\n",
+                encoding="utf-8",
+            )
+
+            os.environ["HERBAL_ADVICE_PATH"] = str(advice_path)
+            reload_constitution_advice_configs()
+
+            values = extract_recent_discomfort_option_values(load_herbal_advice_config())
+            self.assertEqual(values, ("fatigue", "cold hands"))
+
+    def test_recent_discomfort_profile_fields_merge_choice_and_text(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            scoring_path = Path(tmpdir) / "constitution_scoring.private.yaml"
+            advice_path = Path(tmpdir) / "herbal_advice.private.yaml"
+
+            scoring_path.write_text(
+                textwrap.dedent(
+                    """
+                    schema:
+                      fields: [age, gender, sleep, diet, bowel, emotion, exercise, recent_discomfort]
+                      constitutions: [c1]
+                    rules: {}
+                    output_policy:
+                      top_k: 1
+                      min_gap_for_single: 1
+                      min_score_to_output: 9
+                      tie_breaker_priority: [c1]
+                    """
+                ).strip()
+                + "\n",
+                encoding="utf-8",
+            )
+            advice_path.write_text(
+                textwrap.dedent(
+                    """
+                    safety_disclaimer: "for test"
+                    constitution_recommendations:
+                      - id: case_a
+                        constitution: c1
+                        title: "Case A"
+                        symptoms: [fatigue]
+                        herbs: [herb_a]
+                        usage: "daily"
+                    """
+                ).strip()
+                + "\n",
+                encoding="utf-8",
+            )
+
+            os.environ["CONSTITUTION_SCORING_PATH"] = str(scoring_path)
+            os.environ["HERBAL_ADVICE_PATH"] = str(advice_path)
+            reload_constitution_advice_configs()
+
+            result = assess_constitution_and_recommend_herbs(
+                query="Please help.",
+                profile={
+                    "recent_discomfort_choice": "fatigue",
+                    "recent_discomfort_text": "worse in the afternoon",
+                },
+                context={},
+            )
+
+            self.assertEqual(
+                result["input_profile"]["recent_discomfort"],
+                "fatigue\nworse in the afternoon",
+            )
 
 
 if __name__ == "__main__":
