@@ -5,12 +5,19 @@ import logging
 import os
 import time
 import uuid
+from pathlib import Path
+from typing import Any
 
+import yaml
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from app.llm_core import generate_reply
+from app.tools.constitution_advice import (
+    extract_recent_discomfort_option_values,
+    load_herbal_advice_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +30,44 @@ WEB_UI_ERROR_TEXT = os.getenv(
     "WECHAT_SYNC_ERROR_TEXT",
     "系统服务异常，请稍后再试。",
 )
-WEBUI_WELCOME_MESSAGE = os.getenv(
-    "WEBUI_WELCOME_MESSAGE",
-    "欢迎使用健康咨询助手。请告诉我你的情况，我会提供实用建议。",
+WEBUI_INTAKE_CONFIG_PATH = os.getenv(
+    "WEBUI_INTAKE_CONFIG_PATH",
+    "config/questionaire.private.yaml",
 ).strip()
-WEBUI_TITLE = os.getenv("WEBUI_TITLE", "健康咨询助手").strip() or "健康咨询助手"
+
+
+def _looks_ascii_text(value: str) -> bool:
+    return bool(value) and value.isascii()
+
+
+def _load_localized_runtime_text(
+    env_key: str,
+    *,
+    default_zh: str,
+    default_en: str,
+) -> dict[str, str]:
+    direct_value = os.getenv(env_key, "").strip()
+    zh_value = os.getenv(f"{env_key}_ZH", "").strip()
+    en_value = os.getenv(f"{env_key}_EN", "").strip()
+
+    if not zh_value:
+        zh_value = direct_value if direct_value and not _looks_ascii_text(direct_value) else default_zh
+    if not en_value:
+        en_value = direct_value if direct_value and _looks_ascii_text(direct_value) else default_en
+
+    return {"zh": zh_value, "en": en_value}
+
+
+WEBUI_WELCOME_MESSAGE = _load_localized_runtime_text(
+    "WEBUI_WELCOME_MESSAGE",
+    default_zh="欢迎使用健康咨询助手。请告诉我您的情况，我将提供实用的健康指导。",
+    default_en="Welcome. Tell me your situation and I will provide practical wellness guidance.",
+)
+WEBUI_TITLE = _load_localized_runtime_text(
+    "WEBUI_TITLE",
+    default_zh="健康咨询助手",
+    default_en="Health Guidance Assistant",
+)
 
 
 def _normalize_base_path(raw: str | None, default: str = "/ui") -> str:
@@ -46,6 +86,224 @@ WEBUI_API_BASE_URL = (
     or f"{WEBUI_BASE_PATH}/api/chat"
 )
 
+
+def _default_intake_config() -> dict[str, Any]:
+    return {
+        "enabled": False,
+        "auto_collapse_on_submit": True,
+        "title": {"zh": "基础信息快速采集", "en": "Quick intake"},
+        "description": {
+            "zh": "可快速点选并提交，系统会将信息结构化发送给 AI。",
+            "en": "Quickly select baseline information and submit to AI.",
+        },
+        "submit_button": {"zh": "提交", "en": "Submit"},
+        "reset_button": {"zh": "重置", "en": "Reset"},
+        "submit_notice": {
+            "zh": "基础信息已提交，正在生成个性化健康评估，请稍候。",
+            "en": "Information submitted. Generating your personalized wellness assessment...",
+        },
+        "fields": [],
+    }
+
+
+def _normalize_locale_label(value: Any, fallback: str = "") -> dict[str, str]:
+    if isinstance(value, dict):
+        zh = str(value.get("zh", "")).strip()
+        en = str(value.get("en", "")).strip()
+        if zh or en:
+            return {
+                "zh": zh or fallback or en,
+                "en": en or fallback or zh,
+            }
+
+    text = str(value or "").strip()
+    if not text:
+        text = fallback
+    return {"zh": text, "en": text}
+
+
+def _coerce_localized_text(
+    value: Any,
+    *,
+    default_zh: str = "",
+    default_en: str = "",
+) -> dict[str, str]:
+    if isinstance(value, dict):
+        return {
+            "zh": str(value.get("zh", "")).strip() or default_zh,
+            "en": str(value.get("en", "")).strip() or default_en,
+        }
+
+    text = str(value or "").strip()
+    if not text:
+        return {"zh": default_zh, "en": default_en}
+    return {"zh": text, "en": text}
+
+
+def _resolve_dynamic_field_options(field: dict[str, Any]) -> list[dict[str, Any]] | None:
+    options_from = field.get("options_from")
+    if not isinstance(options_from, dict):
+        return None
+
+    source = str(options_from.get("source", "")).strip().lower()
+    if source != "herbal_advice_symptoms":
+        logger.warning("Unsupported intake options_from source '%s' for field '%s'", source, field.get("name", ""))
+        return []
+
+    try:
+        option_values = extract_recent_discomfort_option_values(load_herbal_advice_config())
+    except Exception as exc:
+        logger.warning(
+            "Failed to resolve dynamic intake options for field '%s': %s",
+            field.get("name", ""),
+            exc,
+        )
+        return []
+
+    overrides_raw = field.get("option_labels", {})
+    overrides = overrides_raw if isinstance(overrides_raw, dict) else {}
+
+    options: list[dict[str, Any]] = []
+    for option_value in option_values:
+        label = _normalize_locale_label(overrides.get(option_value), fallback=option_value)
+        options.append({"value": option_value, "label": label})
+    return options
+
+
+def _load_intake_config_from_path(config_path: str | Path | None) -> dict[str, Any]:
+    fallback = _default_intake_config()
+    raw_config_path = str(config_path or "").strip()
+    if not raw_config_path:
+        logger.warning("WEBUI_INTAKE_CONFIG_PATH is empty; intake disabled")
+        return fallback
+
+    primary = Path(raw_config_path)
+    candidates = [primary]
+    if primary.suffix.lower() == ".yaml":
+        candidates.append(primary.with_suffix(".yml"))
+    elif primary.suffix.lower() == ".yml":
+        candidates.append(primary.with_suffix(".yaml"))
+
+    loaded_data: dict[str, Any] | None = None
+    loaded_path: Path | None = None
+
+    for path in candidates:
+        if not path.exists() or not path.is_file():
+            continue
+        try:
+            parsed = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            if isinstance(parsed, dict):
+                loaded_data = parsed
+                loaded_path = path
+                break
+        except Exception as exc:
+            logger.warning("Failed to parse intake config %s: %s", path, exc)
+
+    if loaded_data is None:
+        logger.warning(
+            "No intake config found at %s (or alternate extension); intake disabled",
+            raw_config_path,
+        )
+        return fallback
+
+    intake = loaded_data.get("constitution_scoring_intake", loaded_data)
+    if not isinstance(intake, dict):
+        logger.warning("Invalid intake config structure in %s; intake disabled", loaded_path)
+        return fallback
+
+    fields = intake.get("fields")
+    if not isinstance(fields, list):
+        logger.warning("Intake config in %s missing fields list; intake disabled", loaded_path)
+        return fallback
+
+    normalized_fields: list[dict[str, Any]] = []
+    for field in fields:
+        if not isinstance(field, dict):
+            continue
+        name = str(field.get("name", "")).strip()
+        field_type = str(field.get("type", "")).strip().lower()
+        if not name or field_type not in {"single", "multi", "text"}:
+            continue
+        normalized_field = dict(field)
+        resolved_options = _resolve_dynamic_field_options(normalized_field)
+        if resolved_options:
+            normalized_field["options"] = resolved_options
+        normalized_field.pop("options_from", None)
+        normalized_field.pop("option_labels", None)
+        if field_type in {"single", "multi"}:
+            options = normalized_field.get("options")
+            if not isinstance(options, list) or not options:
+                logger.warning(
+                    "Skipping intake field '%s' in %s because no options were resolved",
+                    name,
+                    loaded_path,
+                )
+                continue
+        normalized_fields.append(normalized_field)
+
+    if not normalized_fields:
+        logger.warning("Intake config in %s has no valid fields; intake disabled", loaded_path)
+        return fallback
+
+    merged = dict(fallback)
+    merged.update(intake)
+    merged["fields"] = normalized_fields
+    merged["enabled"] = bool(intake.get("enabled", True))
+    merged["auto_collapse_on_submit"] = bool(intake.get("auto_collapse_on_submit", True))
+    logger.info("Loaded intake config from %s with %d fields", loaded_path, len(normalized_fields))
+    return merged
+
+
+def _load_intake_config() -> dict[str, Any]:
+    return _load_intake_config_from_path(WEBUI_INTAKE_CONFIG_PATH)
+
+
+def _build_intake_payload_from_state(
+    intake_state: dict[str, Any],
+    intake_fields: list[dict[str, Any]],
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "age": "",
+        "gender": "",
+        "sleep": [],
+        "diet": [],
+        "bowel": [],
+        "emotion": [],
+        "exercise": "",
+        "recent_discomfort": "",
+        "recent_discomfort_choice": "",
+        "recent_discomfort_text": "",
+    }
+    field_names = {
+        str(field.get("name", "")).strip()
+        for field in intake_fields
+        if isinstance(field, dict) and str(field.get("name", "")).strip()
+    }
+
+    for key in tuple(payload):
+        value = intake_state.get(key)
+        if isinstance(value, list):
+            payload[key] = value
+        elif isinstance(value, str):
+            payload[key] = value.strip()
+
+    recent_parts: list[str] = []
+    for key in ("recent_discomfort", "recent_discomfort_choice", "recent_discomfort_text"):
+        value = str(payload.get(key, "")).strip()
+        if value and value not in recent_parts:
+            recent_parts.append(value)
+    payload["recent_discomfort"] = "\n".join(recent_parts)
+
+    if "recent_discomfort_choice" not in field_names and not payload["recent_discomfort_choice"]:
+        payload.pop("recent_discomfort_choice")
+    if "recent_discomfort_text" not in field_names and not payload["recent_discomfort_text"]:
+        payload.pop("recent_discomfort_text")
+
+    return payload
+
+
+INTAKE_CONFIG = _load_intake_config()
+
 router = APIRouter()
 
 
@@ -60,6 +318,7 @@ async def ui_page() -> HTMLResponse:
         title=WEBUI_TITLE,
         welcome_message=WEBUI_WELCOME_MESSAGE,
         api_base_url=WEBUI_API_BASE_URL,
+        intake_config=INTAKE_CONFIG,
     )
     return HTMLResponse(content=html_page, status_code=200)
 
@@ -102,11 +361,20 @@ async def ui_chat(payload: ChatRequest) -> dict[str, object]:
     }
 
 
-def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> str:
-    safe_title = html.escape(title)
-    title_json = json.dumps(title, ensure_ascii=False)
-    welcome_json = json.dumps(welcome_message, ensure_ascii=False)
+def _build_html_page(
+    *,
+    title: str | dict[str, str],
+    welcome_message: str | dict[str, str],
+    api_base_url: str,
+    intake_config: dict[str, Any] | None = None,
+) -> str:
+    localized_title = _coerce_localized_text(title)
+    localized_welcome = _coerce_localized_text(welcome_message)
+    safe_title = html.escape(localized_title.get("zh") or localized_title.get("en") or "")
+    title_json = json.dumps(localized_title, ensure_ascii=False)
+    welcome_json = json.dumps(localized_welcome, ensure_ascii=False)
     api_json = json.dumps(api_base_url)
+    intake_json = json.dumps(intake_config or _default_intake_config(), ensure_ascii=False)
 
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -431,6 +699,158 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
 
     .toggle input {{ width: 18px; height: 18px; }}
 
+    .intake-card-row {{
+      width: 100%;
+    }}
+
+    .intake-card {{
+      width: min(95vw, 700px);
+      background: color-mix(in srgb, var(--assistant-bg) 88%, white 12%);
+      border-color: color-mix(in srgb, var(--border) 72%, var(--accent) 28%);
+      padding: 10px 11px;
+    }}
+
+    .intake-header {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }}
+
+    .intake-title {{
+      font-size: 13px;
+      font-weight: 700;
+    }}
+
+    .intake-toggle {{
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 11px;
+      padding: 3px 7px;
+      cursor: pointer;
+    }}
+
+    .intake-desc {{
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }}
+
+    .intake-body {{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }}
+
+    .intake-field {{
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--panel) 90%, var(--assistant-bg) 10%);
+      border-radius: 9px;
+      padding: 8px;
+    }}
+
+    .intake-field-full {{
+      grid-column: 1 / -1;
+    }}
+
+    .intake-field-label {{
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }}
+
+    .required-mark {{
+      color: var(--error);
+      font-weight: 700;
+    }}
+
+    .intake-options {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }}
+
+    .intake-chip {{
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      line-height: 1.25;
+      cursor: pointer;
+    }}
+
+    .intake-chip.selected {{
+      background: color-mix(in srgb, var(--accent) 20%, var(--panel) 80%);
+      border-color: color-mix(in srgb, var(--accent) 70%, var(--border) 30%);
+    }}
+
+    .intake-textarea {{
+      width: 100%;
+      min-height: 54px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      padding: 7px 9px;
+      font-size: 12px;
+      resize: vertical;
+      outline: none;
+    }}
+
+    .intake-textarea:focus {{
+      border-color: var(--accent);
+    }}
+
+    .intake-actions {{
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 0;
+      flex-wrap: wrap;
+      grid-column: 1 / -1;
+    }}
+
+    .intake-submit,
+    .intake-reset {{
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-height: 32px;
+      padding: 0 10px;
+      font-size: 11px;
+      cursor: pointer;
+      color: var(--text);
+      background: var(--panel);
+    }}
+
+    .intake-submit {{
+      border-color: color-mix(in srgb, var(--accent) 70%, var(--border) 30%);
+      color: #fff;
+      background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 78%, #001f4d));
+      font-weight: 600;
+    }}
+
+    .intake-submit:disabled,
+    .intake-reset:disabled {{
+      opacity: 0.55;
+      cursor: default;
+    }}
+
+    .intake-error {{
+      font-size: 11px;
+      color: var(--error);
+      min-height: 16px;
+      grid-column: 1 / -1;
+    }}
+
     @media (max-width: 560px) {{
       .topbar {{ padding: 10px 10px; }}
       #messages {{ padding: 12px 10px; }}
@@ -439,6 +859,9 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
       .status {{ max-width: 38vw; }}
       .brand {{ font-size: 13px; }}
       .lang-btn {{ font-size: 11px; padding: 0 8px; }}
+      .intake-body {{ grid-template-columns: 1fr; gap: 7px; }}
+      .intake-field {{ padding: 7px; }}
+      .intake-chip {{ font-size: 10px; padding: 4px 7px; }}
     }}
   </style>
 </head>
@@ -505,6 +928,8 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
       apiBaseUrl: {api_json},
     }};
 
+    const INTAKE_CONFIG = {intake_json};
+
     const I18N = {{
       zh: {{
         drawer_title: "菜单",
@@ -532,6 +957,16 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
         status_done: "完成（{{elapsed}} ms）",
         status_failed: "请求失败",
         request_failed: "请求失败，请检查服务状态后重试。",
+        intake_title: "基础信息快速采集",
+        intake_description: "可快速点选并提交，系统会将信息结构化发送给 AI。",
+        intake_submit: "提交",
+        intake_submitting: "提交中...",
+        intake_reset: "重置",
+        intake_expand: "展开",
+        intake_collapse: "收起",
+        intake_required_missing: "请先完成必填项：{{fields}}",
+        intake_payload_prefix: "用户基础信息（constitution_scoring intake）：",
+        intake_submit_notice: "基础信息已提交，正在生成个性化健康评估，请稍候。",
       }},
       en: {{
         drawer_title: "Menu",
@@ -559,6 +994,16 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
         status_done: "Done ({{elapsed}} ms)",
         status_failed: "Request failed",
         request_failed: "Request failed. Please check service status and try again.",
+        intake_title: "Quick Health Intake",
+        intake_description: "Select baseline information and submit to the assistant.",
+        intake_submit: "Submit",
+        intake_submitting: "Submitting...",
+        intake_reset: "Reset",
+        intake_expand: "Expand",
+        intake_collapse: "Collapse",
+        intake_required_missing: "Please complete required fields: {{fields}}",
+        intake_payload_prefix: "User basic information (constitution_scoring intake):",
+        intake_submit_notice: "Information submitted. Generating your personalized wellness assessment...",
       }},
     }};
 
@@ -567,6 +1012,18 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
     const TIMESTAMP_KEY = "openclaw_ui_show_timestamp";
     const THEME_KEY = "openclaw_ui_theme";
     const LANGUAGE_KEY = "openclaw_ui_language";
+    const PAYLOAD_FIELDS = [
+      "age",
+      "gender",
+      "sleep",
+      "diet",
+      "bowel",
+      "emotion",
+      "exercise",
+      "recent_discomfort",
+      "recent_discomfort_choice",
+      "recent_discomfort_text",
+    ];
 
     const menuBtn = document.getElementById("menuBtn");
     const langToggleBtn = document.getElementById("langToggleBtn");
@@ -605,8 +1062,8 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
     }}
 
     let statusState = {{ key: "status_ready", elapsed: 0 }};
+    let isSending = false;
 
-    uiTitle.textContent = CONFIG.title;
     apiBaseLabel.textContent = CONFIG.apiBaseUrl;
 
     let userId = localStorage.getItem(USER_KEY);
@@ -618,14 +1075,86 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
 
     let sessionMessages = [];
 
+    function getIntakeFields() {{
+      if (!INTAKE_CONFIG || !Array.isArray(INTAKE_CONFIG.fields)) {{
+        return [];
+      }}
+      return INTAKE_CONFIG.fields;
+    }}
+
+    function hasIntakeField(fieldName) {{
+      return getIntakeFields().some((field) => String((field && field.name) || "") === fieldName);
+    }}
+
+    function createInitialIntakeState() {{
+      const state = {{}};
+      for (const field of getIntakeFields()) {{
+        if (field.type === "multi") {{
+          state[field.name] = [];
+        }} else {{
+          state[field.name] = "";
+        }}
+      }}
+      return state;
+    }}
+
+    let intakeState = createInitialIntakeState();
+    let intakeCollapsed = false;
+    let intakeSubmitting = false;
+    let intakeError = "";
+
     function t(key) {{
       const dict = I18N[currentLanguage] || I18N.zh;
       return dict[key] || key;
     }}
 
+    function getLocaleText(value, fallback = "") {{
+      if (value && typeof value === "object") {{
+        if (currentLanguage === "en") {{
+          return value.en || value.zh || fallback;
+        }}
+        return value.zh || value.en || fallback;
+      }}
+      if (typeof value === "string") {{
+        return value;
+      }}
+      return fallback;
+    }}
+
+    function getLocaleVariants(value) {{
+      if (value && typeof value === "object") {{
+        return [value.zh, value.en]
+          .map((item) => String(item || "").trim())
+          .filter((item, index, array) => item && array.indexOf(item) === index);
+      }}
+      const text = String(value || "").trim();
+      return text ? [text] : [];
+    }}
+
+    function getWelcomeMessageText() {{
+      return getLocaleText(CONFIG.welcomeMessage, "");
+    }}
+
+    function formatText(template, values) {{
+      let result = template;
+      for (const [key, value] of Object.entries(values || {{}})) {{
+        result = result.replace(`{{${{key}}}}`, String(value));
+      }}
+      return result;
+    }}
+
+    function escapeHtml(text) {{
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\\\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }}
+
     function resolveStatusText(state) {{
       const template = t(state.key);
-      return template.replace("{{elapsed}}", String(state.elapsed || 0));
+      return formatText(template, {{ elapsed: state.elapsed || 0 }});
     }}
 
     function setStatusByKey(key, elapsed = 0) {{
@@ -635,6 +1164,9 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
 
     function applyLanguage() {{
       document.documentElement.lang = currentLanguage === "zh" ? "zh-CN" : "en";
+      const localizedTitle = getLocaleText(CONFIG.title, document.title);
+      uiTitle.textContent = localizedTitle;
+      document.title = localizedTitle;
       drawerTitle.textContent = t("drawer_title");
       drawerDesc.textContent = t("drawer_desc");
       sectionConversation.textContent = t("section_conversation");
@@ -653,6 +1185,16 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
       hintText.textContent = t("hint");
       langToggleBtn.textContent = "中文/English";
       statusPill.textContent = resolveStatusText(statusState);
+      if (
+        sessionMessages.length === 1 &&
+        sessionMessages[0] &&
+        sessionMessages[0].role === "assistant" &&
+        getLocaleVariants(CONFIG.welcomeMessage).includes(String(sessionMessages[0].text || "").trim())
+      ) {{
+        sessionMessages[0].text = getWelcomeMessageText();
+        persistMessages();
+      }}
+      renderMessages();
     }}
 
     function setDrawer(open) {{
@@ -670,6 +1212,207 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
 
     function persistMessages() {{
       localStorage.setItem(MESSAGES_KEY, JSON.stringify(sessionMessages));
+    }}
+
+    function buildIntakeFieldHtml(field) {{
+      const fieldName = String(field.name || "");
+      const fieldLabel = getLocaleText(field.label, fieldName);
+      const requiredMark = field.required ? '<span class="required-mark">*</span>' : "";
+      const fullWidth = field.type === "text" || Boolean(field.full_width);
+      const fieldClass = fullWidth ? "intake-field intake-field-full" : "intake-field";
+
+      if (field.type === "text") {{
+        const value = intakeState[fieldName] || "";
+        const placeholder = getLocaleText(field.placeholder, "");
+        const maxLength = Number(field.max_length || 280);
+        return `
+          <div class="${{fieldClass}}">
+            <div class="intake-field-label">${{escapeHtml(fieldLabel)}} ${{requiredMark}}</div>
+            <textarea
+              class="intake-textarea"
+              data-field="${{escapeHtml(fieldName)}}"
+              placeholder="${{escapeHtml(placeholder)}}"
+              maxlength="${{maxLength}}"
+            >${{escapeHtml(value)}}</textarea>
+          </div>
+        `;
+      }}
+
+      const options = Array.isArray(field.options) ? field.options : [];
+      const currentValue = intakeState[fieldName];
+      const selectedSet = new Set(Array.isArray(currentValue) ? currentValue : []);
+      const optionsHtml = options
+        .map((option) => {{
+          const optionValue = String(option.value ?? "");
+          const optionLabel = getLocaleText(option.label, optionValue);
+          const selected = field.type === "single"
+            ? currentValue === optionValue
+            : selectedSet.has(optionValue);
+          return `
+            <button
+              type="button"
+              class="intake-chip ${{selected ? "selected" : ""}}"
+              data-intake-option="1"
+              data-field="${{escapeHtml(fieldName)}}"
+              data-type="${{escapeHtml(field.type)}}"
+              data-value="${{escapeHtml(optionValue)}}"
+            >${{escapeHtml(optionLabel)}}</button>
+          `;
+        }})
+        .join("");
+
+      return `
+        <div class="${{fieldClass}}">
+          <div class="intake-field-label">${{escapeHtml(fieldLabel)}} ${{requiredMark}}</div>
+          <div class="intake-options">${{optionsHtml}}</div>
+        </div>
+      `;
+    }}
+
+    function buildIntakeCardHtml() {{
+      const titleText = getLocaleText(INTAKE_CONFIG.title, t("intake_title"));
+      const descriptionText = getLocaleText(INTAKE_CONFIG.description, t("intake_description"));
+      const submitLabel = intakeSubmitting
+        ? t("intake_submitting")
+        : getLocaleText(INTAKE_CONFIG.submit_button, t("intake_submit"));
+      const resetLabel = getLocaleText(INTAKE_CONFIG.reset_button, t("intake_reset"));
+      const toggleLabel = intakeCollapsed ? t("intake_expand") : t("intake_collapse");
+      const bodyStyle = intakeCollapsed ? "display:none;" : "";
+
+      const fieldsHtml = getIntakeFields()
+        .map((field) => buildIntakeFieldHtml(field))
+        .join("");
+
+      return `
+        <div class="intake-header">
+          <div class="intake-title">${{escapeHtml(titleText)}}</div>
+          <button type="button" class="intake-toggle" id="intakeToggleBtn">${{escapeHtml(toggleLabel)}}</button>
+        </div>
+        <div class="intake-desc">${{escapeHtml(descriptionText)}}</div>
+        <div class="intake-body" style="${{bodyStyle}}">
+          ${{fieldsHtml}}
+          <div class="intake-error" id="intakeErrorText">${{escapeHtml(intakeError)}}</div>
+          <div class="intake-actions">
+            <button type="button" class="intake-submit" id="intakeSubmitBtn" ${{isSending || intakeSubmitting ? "disabled" : ""}}>${{escapeHtml(submitLabel)}}</button>
+            <button type="button" class="intake-reset" id="intakeResetBtn" ${{isSending || intakeSubmitting ? "disabled" : ""}}>${{escapeHtml(resetLabel)}}</button>
+          </div>
+        </div>
+      `;
+    }}
+
+    function bindIntakeEvents(row) {{
+      function updateIntakeOptionButtons(field, fieldType) {{
+        const currentValue = intakeState[field];
+        const selectedSet = new Set(Array.isArray(currentValue) ? currentValue : []);
+        row.querySelectorAll("button[data-intake-option='1']").forEach((optionBtn) => {{
+          if (String(optionBtn.dataset.field || "") !== field) {{
+            return;
+          }}
+          const optionValue = String(optionBtn.dataset.value || "");
+          const selected = fieldType === "single"
+            ? String(currentValue || "") === optionValue
+            : selectedSet.has(optionValue);
+          optionBtn.classList.toggle("selected", selected);
+        }});
+      }}
+
+      function clearIntakeErrorInView() {{
+        intakeError = "";
+        const errorNode = row.querySelector("#intakeErrorText");
+        if (errorNode) {{
+          errorNode.textContent = "";
+        }}
+      }}
+
+      const toggleBtn = row.querySelector("#intakeToggleBtn");
+      if (toggleBtn) {{
+        toggleBtn.addEventListener("click", () => {{
+          intakeCollapsed = !intakeCollapsed;
+          renderMessages();
+        }});
+      }}
+
+      const submitBtn = row.querySelector("#intakeSubmitBtn");
+      if (submitBtn) {{
+        submitBtn.addEventListener("click", async () => {{
+          await handleIntakeSubmit();
+        }});
+      }}
+
+      const resetBtn = row.querySelector("#intakeResetBtn");
+      if (resetBtn) {{
+        resetBtn.addEventListener("click", () => {{
+          intakeState = createInitialIntakeState();
+          intakeError = "";
+          renderMessages();
+        }});
+      }}
+
+      row.querySelectorAll("button[data-intake-option='1']").forEach((button) => {{
+        button.addEventListener("click", () => {{
+          const field = String(button.dataset.field || "");
+          const value = String(button.dataset.value || "");
+          const fieldType = String(button.dataset.type || "");
+          if (!field || !value) {{
+            return;
+          }}
+
+          if (fieldType === "single") {{
+            intakeState[field] = String(intakeState[field] || "") === value ? "" : value;
+          }} else if (fieldType === "multi") {{
+            const selected = Array.isArray(intakeState[field]) ? [...intakeState[field]] : [];
+            const index = selected.indexOf(value);
+            if (index >= 0) {{
+              selected.splice(index, 1);
+            }} else {{
+              selected.push(value);
+            }}
+            intakeState[field] = selected;
+          }}
+
+          updateIntakeOptionButtons(field, fieldType);
+          clearIntakeErrorInView();
+        }});
+      }});
+
+      row.querySelectorAll("textarea[data-field]").forEach((textarea) => {{
+        textarea.addEventListener("input", () => {{
+          const field = String(textarea.dataset.field || "");
+          if (!field) {{
+            return;
+          }}
+          intakeState[field] = textarea.value;
+        }});
+      }});
+    }}
+
+    function renderIntakeCard() {{
+      const existing = document.getElementById("intakeCardRow");
+      if (existing) {{
+        existing.remove();
+      }}
+
+      if (!INTAKE_CONFIG || !INTAKE_CONFIG.enabled) {{
+        return;
+      }}
+
+      const intakeRow = document.createElement("div");
+      intakeRow.className = "row assistant intake-card-row";
+      intakeRow.id = "intakeCardRow";
+
+      const intakeBubble = document.createElement("div");
+      intakeBubble.className = "bubble intake-card";
+      intakeBubble.innerHTML = buildIntakeCardHtml();
+      intakeRow.appendChild(intakeBubble);
+
+      if (messages.children.length > 0) {{
+        const secondNode = messages.children[1] || null;
+        messages.insertBefore(intakeRow, secondNode);
+      }} else {{
+        messages.appendChild(intakeRow);
+      }}
+
+      bindIntakeEvents(intakeRow);
     }}
 
     function renderMessages() {{
@@ -690,6 +1433,7 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
         row.appendChild(ts);
         messages.appendChild(row);
       }}
+      renderIntakeCard();
       messages.scrollTop = messages.scrollHeight;
     }}
 
@@ -706,7 +1450,7 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
 
     function resetConversation() {{
       sessionMessages = [
-        {{ role: "assistant", text: CONFIG.welcomeMessage, timestamp: nowIso(), error: false }},
+        {{ role: "assistant", text: getWelcomeMessageText(), timestamp: nowIso(), error: false }},
       ];
       persistMessages();
       renderMessages();
@@ -770,6 +1514,185 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
       localStorage.setItem(TIMESTAMP_KEY, enabled ? "1" : "0");
     }}
 
+    function validateIntakePayload() {{
+      const requiredSingles = getIntakeFields().filter((field) => field.type === "single" && field.required);
+      const missingLabels = [];
+
+      for (const field of requiredSingles) {{
+        const value = String(intakeState[field.name] || "").trim();
+        if (!value) {{
+          missingLabels.push(getLocaleText(field.label, field.name));
+        }}
+      }}
+
+      if (missingLabels.length > 0) {{
+        const separator = currentLanguage === "en" ? ", " : "、";
+        intakeError = formatText(t("intake_required_missing"), {{
+          fields: missingLabels.join(separator),
+        }});
+        return false;
+      }}
+
+      intakeError = "";
+      return true;
+    }}
+
+    function buildIntakePayload() {{
+      const payload = {{
+        age: "",
+        gender: "",
+        sleep: [],
+        diet: [],
+        bowel: [],
+        emotion: [],
+        exercise: "",
+        recent_discomfort: "",
+        recent_discomfort_choice: "",
+        recent_discomfort_text: "",
+      }};
+
+      for (const key of PAYLOAD_FIELDS) {{
+        const value = intakeState[key];
+        if (Array.isArray(value)) {{
+          payload[key] = value;
+        }} else if (typeof value === "string") {{
+          payload[key] = value.trim();
+        }}
+      }}
+
+      const recentDiscomfortParts = [];
+      for (const key of ["recent_discomfort", "recent_discomfort_choice", "recent_discomfort_text"]) {{
+        const value = String(payload[key] || "").trim();
+        if (!value || recentDiscomfortParts.includes(value)) {{
+          continue;
+        }}
+        recentDiscomfortParts.push(value);
+      }}
+      payload.recent_discomfort = recentDiscomfortParts.join("\\n");
+
+      if (!hasIntakeField("recent_discomfort_choice") && !payload.recent_discomfort_choice) {{
+        delete payload.recent_discomfort_choice;
+      }}
+      if (!hasIntakeField("recent_discomfort_text") && !payload.recent_discomfort_text) {{
+        delete payload.recent_discomfort_text;
+      }}
+
+      return payload;
+    }}
+
+    async function sendMessageText(text, options = {{ source: "chat" }}) {{
+      const normalized = String(text || "").trim();
+      if (!normalized || isSending) {{
+        return false;
+      }}
+
+      const fromIntake = options && options.source === "intake";
+      const displayCandidate = options && typeof options.displayText === "string"
+        ? options.displayText
+        : "";
+      const displayText = String(displayCandidate || normalized).trim() || normalized;
+      let success = false;
+
+      isSending = true;
+      sendBtn.disabled = true;
+      if (fromIntake) {{
+        intakeSubmitting = true;
+        renderMessages();
+      }}
+
+      addMessage("user", displayText);
+      setStatusByKey("status_thinking");
+
+      const pendingIndex = sessionMessages.length;
+      sessionMessages.push({{
+        role: "assistant",
+        text: "...",
+        timestamp: nowIso(),
+        error: false,
+      }});
+      persistMessages();
+      renderMessages();
+
+      try {{
+        const resp = await fetch(CONFIG.apiBaseUrl, {{
+          method: "POST",
+          headers: {{ "Content-Type": "application/json" }},
+          body: JSON.stringify({{ message: normalized, user_id: userId }}),
+        }});
+
+        let data = null;
+        try {{
+          data = await resp.json();
+        }} catch (_jsonErr) {{
+          data = null;
+        }}
+
+        if (!resp.ok || !data) {{
+          throw new Error("server_error");
+        }}
+
+        const replyText = data.reply || "No reply returned.";
+        sessionMessages[pendingIndex] = {{
+          role: "assistant",
+          text: replyText,
+          timestamp: nowIso(),
+          error: Boolean(data.timed_out),
+        }};
+        persistMessages();
+        renderMessages();
+
+        const elapsed = Number(data.elapsed_ms || 0);
+        if (data.timed_out) {{
+          setStatusByKey("status_timeout", elapsed);
+        }} else {{
+          setStatusByKey("status_done", elapsed);
+        }}
+        success = true;
+      }} catch (_error) {{
+        sessionMessages[pendingIndex] = {{
+          role: "assistant",
+          text: t("request_failed"),
+          timestamp: nowIso(),
+          error: true,
+        }};
+        persistMessages();
+        renderMessages();
+        setStatusByKey("status_failed");
+      }} finally {{
+        isSending = false;
+        sendBtn.disabled = false;
+        if (fromIntake) {{
+          intakeSubmitting = false;
+          if (success && INTAKE_CONFIG.auto_collapse_on_submit) {{
+            intakeCollapsed = true;
+          }}
+          renderMessages();
+        }}
+      }}
+
+      return success;
+    }}
+
+    async function handleIntakeSubmit() {{
+      if (isSending) {{
+        return;
+      }}
+
+      if (!validateIntakePayload()) {{
+        renderMessages();
+        return;
+      }}
+
+      const payload = buildIntakePayload();
+      const prefix = t("intake_payload_prefix");
+      const payloadText = `${{prefix}}\\n\\`\\`\\`json\\n${{JSON.stringify(payload, null, 2)}}\\n\\`\\`\\``;
+      const intakeSubmitNotice = getLocaleText(INTAKE_CONFIG.submit_notice, t("intake_submit_notice"));
+      await sendMessageText(payloadText, {{
+        source: "intake",
+        displayText: intakeSubmitNotice,
+      }});
+    }}
+
     menuBtn.addEventListener("click", () => setDrawer(true));
     overlay.addEventListener("click", () => setDrawer(false));
 
@@ -825,69 +1748,8 @@ def _build_html_page(*, title: str, welcome_message: str, api_base_url: str) -> 
       event.preventDefault();
       const text = input.value.trim();
       if (!text) return;
-
-      addMessage("user", text);
       input.value = "";
-      setStatusByKey("status_thinking");
-      sendBtn.disabled = true;
-
-      const pendingIndex = sessionMessages.length;
-      sessionMessages.push({{
-        role: "assistant",
-        text: "...",
-        timestamp: nowIso(),
-        error: false,
-      }});
-      persistMessages();
-      renderMessages();
-
-      try {{
-        const resp = await fetch(CONFIG.apiBaseUrl, {{
-          method: "POST",
-          headers: {{ "Content-Type": "application/json" }},
-          body: JSON.stringify({{ message: text, user_id: userId }}),
-        }});
-
-        let data = null;
-        try {{
-          data = await resp.json();
-        }} catch (_jsonErr) {{
-          data = null;
-        }}
-
-        if (!resp.ok || !data) {{
-          throw new Error("server_error");
-        }}
-
-        const replyText = data.reply || "No reply returned.";
-        sessionMessages[pendingIndex] = {{
-          role: "assistant",
-          text: replyText,
-          timestamp: nowIso(),
-          error: Boolean(data.timed_out),
-        }};
-        persistMessages();
-        renderMessages();
-
-        const elapsed = Number(data.elapsed_ms || 0);
-        if (data.timed_out) {{
-          setStatusByKey("status_timeout", elapsed);
-        }} else {{
-          setStatusByKey("status_done", elapsed);
-        }}
-      }} catch (_error) {{
-        sessionMessages[pendingIndex] = {{
-          role: "assistant",
-          text: t("request_failed"),
-          timestamp: nowIso(),
-          error: true,
-        }};
-        persistMessages();
-        renderMessages();
-        setStatusByKey("status_failed");
-      }} finally {{
-        sendBtn.disabled = false;
-      }}
+      await sendMessageText(text, {{ source: "chat" }});
     }});
 
     const savedTheme = localStorage.getItem(THEME_KEY) || "light";

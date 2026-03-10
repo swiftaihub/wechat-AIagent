@@ -215,6 +215,24 @@ def _normalize_recommendation(raw_item: Any, index: int) -> dict[str, Any]:
     }
 
 
+def extract_recent_discomfort_option_values(
+    herb_cfg: HerbalAdviceConfig | None = None,
+) -> tuple[str, ...]:
+    config = herb_cfg or load_herbal_advice_config()
+    values: list[str] = []
+    seen: set[str] = set()
+    for item in config.recommendations:
+        symptoms = item.get("symptoms", [])
+        if not isinstance(symptoms, list) or not symptoms:
+            continue
+        first_value = str(symptoms[0]).strip()
+        if not first_value or first_value in seen:
+            continue
+        seen.add(first_value)
+        values.append(first_value)
+    return tuple(values)
+
+
 @lru_cache(maxsize=1)
 def load_constitution_scoring_config() -> ConstitutionScoringConfig:
     path = _resolve_config_path(
@@ -341,6 +359,16 @@ def reload_constitution_advice_configs() -> None:
 
 def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", (text or "").lower()).strip()
+
+
+def _merge_recent_discomfort_values(*values: Any) -> str:
+    merged: list[str] = []
+    for value in values:
+        text = str(value or "").strip()
+        if not text or text in merged:
+            continue
+        merged.append(text)
+    return "\n".join(merged)
 
 
 def _extract_structured_fields(query: str) -> dict[str, str]:
@@ -758,10 +786,23 @@ def assess_constitution_and_recommend_herbs(
 
     extracted = _extract_structured_fields(query)
     normalized_profile: dict[str, str] = {}
+    profile_recent_discomfort_choice = ""
+    profile_recent_discomfort_text = ""
+    if isinstance(profile, dict):
+        profile_recent_discomfort_choice = str(profile.get("recent_discomfort_choice", "")).strip()
+        profile_recent_discomfort_text = str(profile.get("recent_discomfort_text", "")).strip()
     for field in PROFILE_FIELDS:
         from_profile = ""
         if isinstance(profile, dict):
             from_profile = str(profile.get(field, "")).strip()
+        if field == "recent_discomfort":
+            normalized_profile[field] = _merge_recent_discomfort_values(
+                from_profile,
+                profile_recent_discomfort_choice,
+                profile_recent_discomfort_text,
+                extracted.get(field, ""),
+            )
+            continue
         normalized_profile[field] = from_profile or extracted.get(field, "")
 
     direct_recommendations, direct_match_reasons = _select_recommendations_by_title_hint(
