@@ -7,6 +7,7 @@ from functools import lru_cache
 from typing import Any
 
 from app.guardrail import GuardrailEngine
+from app.i18n import normalize_language
 from app.memory_store import get_memory_store
 from app.ollama_client import ollama_chat
 from app.prompt_runtime import PromptRuntime, get_prompt_runtime
@@ -17,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 URL_PATTERN = re.compile(r"https?://[^\s\])>]+")
 PHONE_PATTERN = re.compile(r"\+?\d[\d\-\s]{6,}\d")
+CJK_CHAR_PATTERN = re.compile(r"[\u3400-\u9fff]")
+ENGLISH_WORD_PATTERN = re.compile(r"[A-Za-z]{2,}")
 ADDRESS_PATTERN = re.compile(
     r"\b\d{1,6}\s+[A-Za-z0-9][A-Za-z0-9\s,.-]{2,80}"
     r"(street|st|road|rd|avenue|ave|boulevard|blvd|lane|ln|drive|dr|way|court|ct)\b",
@@ -34,10 +37,19 @@ DISALLOWED_LIFESTYLE_ADVICE_KEYWORDS = (
     "\u996e\u98df\u5efa\u8bae",
     "\u8fd0\u52a8\u5efa\u8bae",
     "\u60c5\u7eea\u5efa\u8bae",
+    "sleep schedule",
+    "diet advice",
+    "dietary advice",
+    "exercise advice",
+    "emotional management",
+    "daily wellness advice",
 )
 DAILY_SECTION_TITLE = "\u3010\u65e5\u5e38\u8c03\u517b\u5efa\u8bae\u3011"
 HERBAL_SECTION_TITLE = "\u3010\u4e2d\u836f\u517b\u751f\u5efa\u8bae\u3011"
 SYMPTOM_SECTION_TITLE = "\u3010\u5bf9\u5e94\u75c7\u72b6\u3011"
+DAILY_SECTION_TITLE_EN = "[Daily Wellness Advice]"
+HERBAL_SECTION_TITLE_EN = "[Herbal Wellness Advice]"
+SYMPTOM_SECTION_TITLE_EN = "[Relevant Symptoms]"
 OUT_OF_SCOPE_KEYWORDS = (
     "python",
     "java",
@@ -99,10 +111,14 @@ META_CHAT_KEYWORDS = (
 )
 
 
-@lru_cache(maxsize=1)
-def _get_guardrail_engine() -> GuardrailEngine:
+@lru_cache(maxsize=2)
+def _get_guardrail_engine(reply_language: str = "zh") -> GuardrailEngine:
     runtime = get_prompt_runtime()
-    return GuardrailEngine(runtime.guardrail_settings)
+    if hasattr(runtime, "guardrail_settings_for_language"):
+        settings = runtime.guardrail_settings_for_language(reply_language)
+    else:
+        settings = runtime.guardrail_settings
+    return GuardrailEngine(settings)
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -196,6 +212,84 @@ def _classify_none_tool_intent(user_text: str) -> str:
     return "meta_chat"
 
 
+def _normalize_reply_language(value: str | None) -> str:
+    normalized = str(value or "").strip().lower()
+    if normalized in {"zh", "zh-cn", "zh_hans", "chinese", "中文"}:
+        return "zh"
+    if normalized in {"en", "en-us", "english"}:
+        return "en"
+    return ""
+
+
+def _normalize_reply_language(value: str | None) -> str:
+    return normalize_language(value, default="")
+
+
+def _detect_reply_language(user_text: str) -> str:
+    text = str(user_text or "")
+    english_words = ENGLISH_WORD_PATTERN.findall(text)
+    has_cjk = bool(CJK_CHAR_PATTERN.search(text))
+    if has_cjk and len(english_words) <= 3:
+        return "zh"
+    if english_words and not has_cjk:
+        return "en"
+    if len(english_words) >= 4:
+        return "en"
+    return "zh"
+
+
+def _resolve_reply_language(user_text: str, preferred_language: str | None = None) -> str:
+    explicit = _normalize_reply_language(preferred_language)
+    if explicit:
+        return explicit
+    return _detect_reply_language(user_text)
+
+
+def _reply_language_instruction(reply_language: str) -> str:
+    if reply_language == "en":
+        return (
+            "Please reply in English. If a source term should stay in Chinese, keep the Chinese term "
+            "and add a brief English explanation when helpful."
+        )
+    return "请使用简体中文作答。"
+
+
+def _section_title(kind: str, reply_language: str) -> str:
+    if reply_language == "en":
+        return {
+            "daily": DAILY_SECTION_TITLE_EN,
+            "herbal": HERBAL_SECTION_TITLE_EN,
+            "symptom": SYMPTOM_SECTION_TITLE_EN,
+        }[kind]
+    return {
+        "daily": DAILY_SECTION_TITLE,
+        "herbal": HERBAL_SECTION_TITLE,
+        "symptom": SYMPTOM_SECTION_TITLE,
+    }[kind]
+
+
+def _build_localized_out_of_scope_reply(reply_language: str = "zh") -> str:
+    if reply_language == "en":
+        return (
+            "I currently only provide Traditional Chinese Medicine wellness and herbal guidance, "
+            "and I cannot answer programming or other unrelated topics. "
+            "If you want, I can provide herbal wellness suggestions based on your age, gender, sleep, diet, "
+            "bowel habits, emotions, exercise, and recent discomfort."
+        )
+    return _build_out_of_scope_reply()
+
+
+def _build_localized_meta_chat_reply(reply_language: str = "zh") -> str:
+    if reply_language == "en":
+        return (
+            "I can help organize Traditional Chinese Medicine wellness and herbal guidance, "
+            "but I do not replace a clinician or provide diagnoses and prescriptions. "
+            "You can share your age, gender, sleep, diet, bowel habits, emotions, exercise, "
+            "and recent discomfort for more tailored herbal wellness suggestions."
+        )
+    return _build_meta_chat_reply()
+
+
 def _build_out_of_scope_reply() -> str:
     return (
         "我目前仅提供中医养生与中药调养相关信息，暂不提供编程或其他非养生领域的解答。"
@@ -247,12 +341,13 @@ def _strip_lifestyle_advice_sections(text: str) -> str:
     return _normalize_reply_whitespace("\n".join(filtered))
 
 
-def _enforce_herbal_only_reply(text: str) -> str:
+def _enforce_herbal_only_reply(text: str, reply_language: str = "zh") -> str:
     normalized = (text or "").strip()
     if not normalized:
         return ""
 
-    normalized = normalized.replace(DAILY_SECTION_TITLE, HERBAL_SECTION_TITLE)
+    for daily_title in (DAILY_SECTION_TITLE, DAILY_SECTION_TITLE_EN):
+        normalized = normalized.replace(daily_title, _section_title("herbal", reply_language))
     normalized = _strip_lifestyle_advice_sections(normalized)
     return _normalize_reply_whitespace(normalized)
 
@@ -280,7 +375,11 @@ def _collect_symptom_candidates(tool_result: dict[str, Any]) -> list[str]:
     return list(dict.fromkeys(symptoms))
 
 
-def _ensure_symptom_section(output_text: str, tool_result: dict[str, Any]) -> str:
+def _ensure_symptom_section(
+    output_text: str,
+    tool_result: dict[str, Any],
+    reply_language: str = "zh",
+) -> str:
     text = (output_text or "").strip()
     if not text:
         return text
@@ -288,7 +387,7 @@ def _ensure_symptom_section(output_text: str, tool_result: dict[str, Any]) -> st
         return text
     if str(tool_result.get("tool", "")).strip() == "none":
         return text
-    if SYMPTOM_SECTION_TITLE in text:
+    if SYMPTOM_SECTION_TITLE in text or SYMPTOM_SECTION_TITLE_EN in text:
         return text
 
     symptoms = _collect_symptom_candidates(tool_result)
@@ -299,6 +398,17 @@ def _ensure_symptom_section(output_text: str, tool_result: dict[str, Any]) -> st
     section_block = f"{SYMPTOM_SECTION_TITLE}\n- {symptom_line}"
 
     insert_targets = (HERBAL_SECTION_TITLE, DAILY_SECTION_TITLE)
+    separator = ", " if reply_language == "en" else "、"
+    symptom_line = separator.join(symptoms[:4])
+    section_block = f"{_section_title('symptom', reply_language)}\n- {symptom_line}"
+    insert_targets = (
+        _section_title("herbal", reply_language),
+        _section_title("daily", reply_language),
+        HERBAL_SECTION_TITLE,
+        DAILY_SECTION_TITLE,
+        HERBAL_SECTION_TITLE_EN,
+        DAILY_SECTION_TITLE_EN,
+    )
     for marker in insert_targets:
         marker_index = text.find(marker)
         if marker_index >= 0:
@@ -452,13 +562,15 @@ def _format_handoff_line(handoff: dict[str, Any]) -> str:
     return label
 
 
-def render_tool_result_fallback_reply(tool_result: dict[str, Any]) -> str:
+def render_tool_result_fallback_reply(tool_result: dict[str, Any], reply_language: str = "zh") -> str:
     matched_items = tool_result.get("matched_items", [])
     if not isinstance(matched_items, list) or not matched_items:
-        return (
-            "I could not match your request to a specific advice item yet. "
-            "Please provide more detail, such as your goal, duration, and any prior evaluation."
-        )
+        if reply_language == "en":
+            return (
+                "I could not match your request to a specific advice item yet. "
+                "Please provide more detail, such as your goal, duration, and any prior evaluation."
+            )
+        return "暂时还不能准确匹配到具体建议。请补充你的目标、持续时间以及是否做过相关评估。"
 
     lines: list[str] = []
     for item in matched_items:
@@ -476,13 +588,13 @@ def render_tool_result_fallback_reply(tool_result: dict[str, Any]) -> str:
             lines.append(advice)
 
         if isinstance(handoffs, list) and handoffs:
-            lines.append("Available handoff info:")
+            lines.append("Available handoff info:" if reply_language == "en" else "可用联系信息：")
             for handoff in handoffs:
                 if isinstance(handoff, dict):
                     lines.append(f"- {_format_handoff_line(handoff)}")
 
         if isinstance(followups, list) and followups:
-            lines.append("Suggested follow-up details:")
+            lines.append("Suggested follow-up details:" if reply_language == "en" else "建议补充信息：")
             for question in followups[:3]:
                 question_text = str(question).strip()
                 if question_text:
@@ -492,7 +604,8 @@ def render_tool_result_fallback_reply(tool_result: dict[str, Any]) -> str:
         if isinstance(safety, dict):
             disclaimer = str(safety.get("disclaimer", "")).strip()
         if disclaimer:
-            lines.append(f"Note: {disclaimer}")
+            prefix = "Note" if reply_language == "en" else "提示"
+            lines.append(f"{prefix}: {disclaimer}")
 
         lines.append("")
 
@@ -617,6 +730,42 @@ def _extract_first_json_object(text: str) -> str:
     return ""
 
 
+def _runtime_system_prompt(runtime: PromptRuntime, profile: str, reply_language: str) -> str:
+    try:
+        return runtime.system_prompt(profile, language=reply_language)
+    except TypeError:
+        return runtime.system_prompt(profile)
+
+
+def _runtime_render_user_prompt(
+    runtime: PromptRuntime,
+    *,
+    profile: str,
+    user_text: str,
+    user_id: str,
+    context: dict[str, Any],
+    extra_variables: dict[str, Any],
+    reply_language: str,
+) -> str:
+    try:
+        return runtime.render_user_prompt(
+            profile=profile,
+            user_text=user_text,
+            user_id=user_id,
+            context=context,
+            extra_variables=extra_variables,
+            language=reply_language,
+        )
+    except TypeError:
+        return runtime.render_user_prompt(
+            profile=profile,
+            user_text=user_text,
+            user_id=user_id,
+            context=context,
+            extra_variables=extra_variables,
+        )
+
+
 async def _generate_direct_reply(
     *,
     runtime: PromptRuntime,
@@ -625,26 +774,32 @@ async def _generate_direct_reply(
     user_text: str,
     context: dict[str, Any],
 ) -> str:
+    reply_language = _normalize_reply_language(str(context.get("reply_language", ""))) or "zh"
     none_tool_intent = _classify_none_tool_intent(user_text)
     normalized_intent_text = _normalize_intent_text(user_text)
     if none_tool_intent == "out_of_scope":
-        return guardrail.sanitize_output(_build_out_of_scope_reply())
+        return guardrail.sanitize_output(_build_localized_out_of_scope_reply(reply_language))
     if none_tool_intent == "meta_chat" and _contains_any_keyword(
         normalized_intent_text,
         META_CHAT_KEYWORDS,
     ):
-        return guardrail.sanitize_output(_build_meta_chat_reply())
+        return guardrail.sanitize_output(_build_localized_meta_chat_reply(reply_language))
 
     profile = _default_profile()
-    system_prompt = runtime.system_prompt(profile)
-    user_prompt = runtime.render_user_prompt(
+    system_prompt = _runtime_system_prompt(runtime, profile, reply_language)
+    user_prompt = _runtime_render_user_prompt(
+        runtime,
         profile=profile,
         user_text=user_text,
         user_id=user_id,
         context=context,
+        extra_variables={
+            "reply_language_instruction": str(context.get("reply_language_instruction", "")).strip(),
+        },
+        reply_language=reply_language,
     )
     raw_output = await ollama_chat(system_prompt=system_prompt, user_prompt=user_prompt)
-    raw_output = _enforce_herbal_only_reply(raw_output)
+    raw_output = _enforce_herbal_only_reply(raw_output, reply_language)
     return guardrail.sanitize_output(raw_output)
 
 
@@ -656,12 +811,14 @@ async def _generate_with_tool_calling(
     user_text: str,
     context: dict[str, Any],
 ) -> str:
+    reply_language = _normalize_reply_language(str(context.get("reply_language", ""))) or "zh"
     planner_profile = _planner_profile()
     final_profile = _final_profile()
 
     planner_started = time.perf_counter()
-    planner_system_prompt = runtime.system_prompt(planner_profile)
-    planner_user_prompt = runtime.render_user_prompt(
+    planner_system_prompt = _runtime_system_prompt(runtime, planner_profile, reply_language)
+    planner_user_prompt = _runtime_render_user_prompt(
+        runtime,
         profile=planner_profile,
         user_text=user_text,
         user_id=user_id,
@@ -669,6 +826,7 @@ async def _generate_with_tool_calling(
         extra_variables={
             "tools_json": json.dumps(get_tool_specs_for_prompt(), ensure_ascii=False),
         },
+        reply_language=reply_language,
     )
     call_json_text = await ollama_chat(
         system_prompt=planner_system_prompt,
@@ -698,7 +856,7 @@ async def _generate_with_tool_calling(
         none_tool_intent = _classify_none_tool_intent(user_text)
         if none_tool_intent == "out_of_scope":
             logger.info("Tool planner none-intent=out_of_scope user=%s", user_id)
-            return guardrail.sanitize_output(_build_out_of_scope_reply())
+            return guardrail.sanitize_output(_build_localized_out_of_scope_reply(reply_language))
 
         tool_result = {
             "ok": True,
@@ -737,8 +895,9 @@ async def _generate_with_tool_calling(
         raise RuntimeError(f"tool_execution_failed:{tool_result.get('error', 'unknown_error')}")
 
     final_started = time.perf_counter()
-    final_system_prompt = runtime.system_prompt(final_profile)
-    final_user_prompt = runtime.render_user_prompt(
+    final_system_prompt = _runtime_system_prompt(runtime, final_profile, reply_language)
+    final_user_prompt = _runtime_render_user_prompt(
+        runtime,
         profile=final_profile,
         user_text=user_text,
         user_id=user_id,
@@ -746,7 +905,9 @@ async def _generate_with_tool_calling(
         extra_variables={
             "tool_call_json": json.dumps(tool_call, ensure_ascii=False),
             "tool_result_json": json.dumps(tool_result, ensure_ascii=False),
+            "reply_language_instruction": str(context.get("reply_language_instruction", "")).strip(),
         },
+        reply_language=reply_language,
     )
     final_output = await ollama_chat(
         system_prompt=final_system_prompt,
@@ -760,17 +921,18 @@ async def _generate_with_tool_calling(
             "Final output contains unapproved handoff values user=%s; using deterministic fallback",
             user_id,
         )
-        final_output = render_tool_result_fallback_reply(tool_result)
+        final_output = render_tool_result_fallback_reply(tool_result, reply_language=reply_language)
 
-    final_output = _ensure_symptom_section(final_output, tool_result)
+    final_output = _ensure_symptom_section(final_output, tool_result, reply_language)
     logger.info("Tool final generation user=%s final_ms=%.1f", user_id, final_elapsed_ms)
-    final_output = _enforce_herbal_only_reply(final_output)
+    final_output = _enforce_herbal_only_reply(final_output, reply_language)
     return guardrail.sanitize_output(final_output)
 
 
-async def generate_reply(user_id: str, text: str) -> str:
+async def generate_reply(user_id: str, text: str, preferred_language: str | None = None) -> str:
     runtime = get_prompt_runtime()
-    guardrail = _get_guardrail_engine()
+    reply_language = _resolve_reply_language(text, preferred_language)
+    guardrail = _get_guardrail_engine(reply_language)
     memory_store = get_memory_store()
 
     input_result = guardrail.check_input(text)
@@ -783,6 +945,8 @@ async def generate_reply(user_id: str, text: str) -> str:
         "channel": "wechat_mp",
         "user_id": user_id,
         "tool_calling_enabled": str(_tool_calling_enabled()).lower(),
+        "reply_language": reply_language,
+        "reply_language_instruction": _reply_language_instruction(reply_language),
         "user_text_preview": _preview_text(clean_user_text, _log_text_preview_chars()),
         "recent_history": recent_history or "-",
     }
