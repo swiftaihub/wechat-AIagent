@@ -7,13 +7,15 @@ from typing import Any, Mapping
 
 import yaml
 
+from app.i18n import normalize_localized_text, normalize_language, resolve_localized_text
+
 logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
 class PromptProfile:
-    system_prompt: str
-    user_prompt_template: str
+    system_prompt: Mapping[str, str]
+    user_prompt_template: Mapping[str, str]
 
 
 @dataclass(frozen=True)
@@ -23,10 +25,10 @@ class GuardrailSettings:
     blocked_input_patterns: tuple[str, ...] = ()
     blocked_output_patterns: tuple[str, ...] = ()
     redaction_patterns: tuple[str, ...] = ()
-    redaction_replacement: str = "[REDACTED]"
-    blocked_response: str = "This request cannot be processed."
-    fallback_response: str = "I cannot generate a valid reply right now."
-    trim_suffix: str = "..."
+    redaction_replacement: str | Mapping[str, str] = "[REDACTED]"
+    blocked_response: str | Mapping[str, str] = "This request cannot be processed."
+    fallback_response: str | Mapping[str, str] = "I cannot generate a valid reply right now."
+    trim_suffix: str | Mapping[str, str] = "..."
 
 
 @dataclass(frozen=True)
@@ -56,11 +58,42 @@ class PromptRuntime:
 
     @property
     def guardrail_settings(self) -> GuardrailSettings:
-        return self._settings.guardrail
+        return self.guardrail_settings_for_language("zh")
 
-    def system_prompt(self, profile: str | None = None) -> str:
+    def guardrail_settings_for_language(self, language: str | None = None) -> GuardrailSettings:
+        settings = self._settings.guardrail
+        lang = normalize_language(language)
+        return GuardrailSettings(
+            enabled=settings.enabled,
+            max_output_chars=settings.max_output_chars,
+            blocked_input_patterns=settings.blocked_input_patterns,
+            blocked_output_patterns=settings.blocked_output_patterns,
+            redaction_patterns=settings.redaction_patterns,
+            redaction_replacement=resolve_localized_text(
+                settings.redaction_replacement,
+                lang,
+                fallback="[REDACTED]",
+            ),
+            blocked_response=resolve_localized_text(
+                settings.blocked_response,
+                lang,
+                fallback="This request cannot be processed.",
+            ),
+            fallback_response=resolve_localized_text(
+                settings.fallback_response,
+                lang,
+                fallback="I cannot generate a valid reply right now.",
+            ),
+            trim_suffix=resolve_localized_text(
+                settings.trim_suffix,
+                lang,
+                fallback="...",
+            ),
+        )
+
+    def system_prompt(self, profile: str | None = None, *, language: str | None = None) -> str:
         active_profile = self._profile(profile)
-        return active_profile.system_prompt
+        return resolve_localized_text(active_profile.system_prompt, language)
 
     def render_user_prompt(
         self,
@@ -70,6 +103,7 @@ class PromptRuntime:
         user_id: str | None = None,
         context: Mapping[str, Any] | None = None,
         extra_variables: Mapping[str, Any] | None = None,
+        language: str | None = None,
     ) -> str:
         active_profile = self._profile(profile)
         context = context or {}
@@ -94,7 +128,8 @@ class PromptRuntime:
             for key, value in extra_variables.items():
                 render_payload[str(key)] = "" if value is None else str(value)
 
-        return active_profile.user_prompt_template.format_map(render_payload).strip()
+        template = resolve_localized_text(active_profile.user_prompt_template, language)
+        return template.format_map(render_payload).strip()
 
     def _profile(self, profile: str | None) -> PromptProfile:
         profile_name = (profile or self._settings.default_profile).strip()
@@ -150,12 +185,12 @@ def _to_prompt_profile(profile_name: str, raw_profile: Any) -> PromptProfile:
     if not isinstance(raw_profile, dict):
         raise ValueError(f"Profile '{profile_name}' must be a mapping.")
 
-    system_prompt = str(raw_profile.get("system_prompt", "")).strip()
-    user_prompt_template = str(raw_profile.get("user_prompt_template", "")).strip()
+    system_prompt = normalize_localized_text(raw_profile.get("system_prompt", ""))
+    user_prompt_template = normalize_localized_text(raw_profile.get("user_prompt_template", ""))
 
-    if not system_prompt:
+    if not (system_prompt["zh"] or system_prompt["en"]):
         raise ValueError(f"Profile '{profile_name}' missing system_prompt.")
-    if not user_prompt_template:
+    if not (user_prompt_template["zh"] or user_prompt_template["en"]):
         raise ValueError(f"Profile '{profile_name}' missing user_prompt_template.")
 
     return PromptProfile(
@@ -184,16 +219,22 @@ def _to_guardrail_settings(raw_guardrail: Any) -> GuardrailSettings:
         blocked_input_patterns=_list_of_strings("blocked_input_patterns"),
         blocked_output_patterns=_list_of_strings("blocked_output_patterns"),
         redaction_patterns=_list_of_strings("redaction_patterns"),
-        redaction_replacement=str(raw_guardrail.get("redaction_replacement", "[REDACTED]")),
-        blocked_response=str(
-            raw_guardrail.get("blocked_response", "This request cannot be processed.")
-        ).strip()
-        or "This request cannot be processed.",
-        fallback_response=str(
-            raw_guardrail.get("fallback_response", "I cannot generate a valid reply right now.")
-        ).strip()
-        or "I cannot generate a valid reply right now.",
-        trim_suffix=str(raw_guardrail.get("trim_suffix", "...")),
+        redaction_replacement=normalize_localized_text(
+            raw_guardrail.get("redaction_replacement", "[REDACTED]"),
+            fallback="[REDACTED]",
+        ),
+        blocked_response=normalize_localized_text(
+            raw_guardrail.get("blocked_response", "This request cannot be processed."),
+            fallback="This request cannot be processed.",
+        ),
+        fallback_response=normalize_localized_text(
+            raw_guardrail.get("fallback_response", "I cannot generate a valid reply right now."),
+            fallback="I cannot generate a valid reply right now.",
+        ),
+        trim_suffix=normalize_localized_text(
+            raw_guardrail.get("trim_suffix", "..."),
+            fallback="...",
+        ),
     )
 
 

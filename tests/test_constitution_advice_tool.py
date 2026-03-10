@@ -303,6 +303,109 @@ class ConstitutionAdviceToolTests(unittest.TestCase):
                 "fatigue\nworse in the afternoon",
             )
 
+    def test_localized_config_can_return_english_tool_result(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            scoring_path = Path(tmpdir) / "constitution_scoring.private.yaml"
+            advice_path = Path(tmpdir) / "herbal_advice.private.yaml"
+
+            scoring_path.write_text(
+                textwrap.dedent(
+                    """
+                    schema:
+                      fields: [age, gender, sleep, diet, bowel, emotion, exercise, recent_discomfort]
+                      constitutions: [qi_xu]
+                      constitution_labels:
+                        qi_xu:
+                          zh: 气虚
+                          en: Qi deficiency
+                    rules:
+                      diet:
+                        options:
+                          "食欲不振/吃一点就胀/饭后犯困":
+                            label:
+                              zh: 食欲不振/吃一点就胀/饭后犯困
+                              en: Poor appetite / bloating after a small meal / sleepy after meals
+                            add: {qi_xu: 3}
+                            match_keywords:
+                              zh: [食欲差]
+                              en: [poor appetite, bloating after meals]
+                    output_policy:
+                      top_k: 1
+                      min_gap_for_single: 1
+                      min_score_to_output: 1
+                      tie_breaker_priority: [qi_xu]
+                    """
+                ).strip()
+                + "\n",
+                encoding="utf-8",
+            )
+
+            advice_path.write_text(
+                textwrap.dedent(
+                    """
+                    safety_disclaimer:
+                      zh: 仅供参考
+                      en: For reference only.
+                    required_append_text:
+                      zh: 微信：demo
+                      en: "WeChat: demo"
+                    company_handoffs:
+                      - type: address
+                        label:
+                          zh: 公司地址
+                          en: Company address
+                        address:
+                          zh: 新疆测试地址
+                          en: Test address, Xinjiang
+                    constitution_recommendations:
+                      - id: qi_xu_case
+                        constitution: qi_xu
+                        constitution_label:
+                          zh: 气虚
+                          en: Qi deficiency
+                        title:
+                          zh: 气虚调养建议（疲劳气短）
+                          en: Qi deficiency wellness guidance (fatigue and shortness of breath)
+                        symptoms:
+                          - zh: 易疲劳
+                            en: Fatigue
+                          - zh: 气短
+                            en: Shortness of breath
+                        herbs:
+                          - zh: 黄芪
+                            en: Astragalus
+                          - zh: 党参
+                            en: Codonopsis
+                        usage:
+                          zh: 黄芪10g、党参10g，连用7天。
+                          en: Astragalus 10g and Codonopsis 10g for 7 days.
+                        cautions:
+                          zh: 感冒时暂停。
+                          en: Pause during an acute cold.
+                    """
+                ).strip()
+                + "\n",
+                encoding="utf-8",
+            )
+
+            os.environ["CONSTITUTION_SCORING_PATH"] = str(scoring_path)
+            os.environ["HERBAL_ADVICE_PATH"] = str(advice_path)
+            reload_constitution_advice_configs()
+
+            result = assess_constitution_and_recommend_herbs(
+                query="I have poor appetite and feel bloated after meals.",
+                profile={"diet": "poor appetite and bloating after meals"},
+                context={"reply_language": "en"},
+            )
+
+            self.assertTrue(result["constitution_assessment"]["selected"])
+            self.assertEqual(result["constitution_assessment"]["selected"][0]["constitution"], "Qi deficiency")
+            self.assertEqual(result["herbal_recommendations"][0]["title"], "Qi deficiency wellness guidance (fatigue and shortness of breath)")
+            self.assertIn("Astragalus", result["herbal_recommendations"][0]["herbs"])
+            self.assertEqual(result["required_append_text"], "WeChat: demo")
+            self.assertIn("Suggested herbs", result["matched_items"][0]["advice"])
+            self.assertEqual(result["matched_items"][0]["handoffs"][0]["label"], "Company address")
+
 
 if __name__ == "__main__":
     unittest.main()
