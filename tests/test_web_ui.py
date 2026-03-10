@@ -51,6 +51,21 @@ class WebUiTests(unittest.TestCase):
         self.assertEqual(data["reply"], "ok")
         self.assertFalse(data["timed_out"])
 
+    def test_ui_chat_passes_language_preference(self) -> None:
+        mocked_generate = AsyncMock(return_value="ok")
+        with patch("app.web_ui.generate_reply", new=mocked_generate):
+            resp = self.client.post(
+                f"{webui_base_path}/api/chat",
+                json={"message": "hello", "user_id": "test-user", "language": "en"},
+            )
+
+        self.assertEqual(resp.status_code, 200)
+        mocked_generate.assert_awaited_once_with(
+            user_id="test-user",
+            text="hello",
+            preferred_language="en",
+        )
+
     def test_ui_chat_timeout(self) -> None:
         async def _timeout(*args, **kwargs):
             raise asyncio.TimeoutError()
@@ -180,6 +195,62 @@ class WebUiTests(unittest.TestCase):
         self.assertIn('getLocaleText(CONFIG.title, document.title)', html)
         self.assertIn('getWelcomeMessageText()', html)
         self.assertIn('String(intakeState[field] || "") === value ? "" : value', html)
+        self.assertIn('language: languageExplicit ? currentLanguage : null', html)
+
+    def test_intake_dynamic_options_use_localized_labels_from_herbal_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            advice_path = Path(tmpdir) / "herbal_advice.private.yaml"
+            intake_path = Path(tmpdir) / "questionaire.private.yaml"
+
+            advice_path.write_text(
+                textwrap.dedent(
+                    """
+                    safety_disclaimer: "for test"
+                    constitution_recommendations:
+                      - id: case_a
+                        constitution: c1
+                        title: "Case A"
+                        symptoms:
+                          - zh: 易疲劳
+                            en: Fatigue
+                          - zh: 乏力
+                            en: Low energy
+                        herbs: [herb_a]
+                        usage: "daily"
+                    """
+                ).strip()
+                + "\n",
+                encoding="utf-8",
+            )
+            intake_path.write_text(
+                textwrap.dedent(
+                    """
+                    constitution_scoring_intake:
+                      enabled: true
+                      fields:
+                        - name: recent_discomfort_choice
+                          type: single
+                          label:
+                            zh: 最近不适（单选）
+                            en: Recent discomfort (single choice)
+                          options_from:
+                            source: herbal_advice_symptoms
+                            pick: first
+                    """
+                ).strip()
+                + "\n",
+                encoding="utf-8",
+            )
+
+            with patch.dict(os.environ, {"HERBAL_ADVICE_PATH": str(advice_path)}, clear=False):
+                reload_constitution_advice_configs()
+                intake_config = _load_intake_config_from_path(intake_path)
+
+            option = intake_config["fields"][0]["options"][0]
+            self.assertEqual(option["value"], "易疲劳")
+            self.assertEqual(option["label"]["zh"], "易疲劳")
+            self.assertEqual(option["label"]["en"], "Fatigue")
+            reload_constitution_advice_configs()
 
     def test_localized_runtime_text_supports_bilingual_env_values(self) -> None:
         with patch.dict(

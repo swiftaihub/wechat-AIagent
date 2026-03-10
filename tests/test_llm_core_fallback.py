@@ -31,6 +31,7 @@ class _FakeRuntime:
             f"USER={user_id or ''}\n"
             f"CHANNEL={context.get('channel', '')}\n"
             f"HISTORY={context.get('recent_history', '')}\n"
+            f"LANG={extra_variables.get('reply_language_instruction', '')}\n"
             f"TEXT={user_text}\n"
             f"TOOLS={extra_variables.get('tools_json', '')}\n"
             f"TOOL_CALL={extra_variables.get('tool_call_json', '')}\n"
@@ -135,7 +136,7 @@ class LlmCoreFallbackTests(unittest.IsolatedAsyncioTestCase):
         ):
             reply = await llm_core.generate_reply(user_id="u_off", text="How to write Python code?")
 
-        self.assertIn("仅提供中医养生与中药调养相关信息", reply)
+        self.assertIn("Traditional Chinese Medicine wellness and herbal guidance", reply)
         self.assertEqual(mocked_chat.await_count, 1)
 
     async def test_none_tool_meta_chat_uses_final_generation(self) -> None:
@@ -174,6 +175,65 @@ class LlmCoreFallbackTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(mocked_chat.await_count, 2)
         second_prompt = mocked_chat.await_args_list[1].kwargs.get("user_prompt", "")
         self.assertIn("HISTORY=[User] first question", second_prompt)
+
+    async def test_generate_reply_uses_explicit_english_preference_in_prompt(self) -> None:
+        fake_runtime = _FakeRuntime()
+        guardrail = GuardrailEngine(fake_runtime.guardrail_settings)
+        os.environ["TOOL_CALLING_ENABLED"] = "0"
+
+        with (
+            patch("app.llm_core.get_prompt_runtime", return_value=fake_runtime),
+            patch("app.llm_core._get_guardrail_engine", return_value=guardrail),
+            patch("app.llm_core.ollama_chat", new=AsyncMock(return_value="DIRECT_REPLY")) as mocked_chat,
+        ):
+            reply = await llm_core.generate_reply(
+                user_id="lang-u1",
+                text="最近失眠口干",
+                preferred_language="en",
+            )
+
+        self.assertEqual(reply, "DIRECT_REPLY")
+        first_prompt = mocked_chat.await_args.kwargs.get("user_prompt", "")
+        self.assertIn("LANG=Please reply in English.", first_prompt)
+
+    async def test_generate_reply_auto_detects_english_when_preference_missing(self) -> None:
+        fake_runtime = _FakeRuntime()
+        guardrail = GuardrailEngine(fake_runtime.guardrail_settings)
+        os.environ["TOOL_CALLING_ENABLED"] = "0"
+
+        with (
+            patch("app.llm_core.get_prompt_runtime", return_value=fake_runtime),
+            patch("app.llm_core._get_guardrail_engine", return_value=guardrail),
+            patch("app.llm_core.ollama_chat", new=AsyncMock(return_value="DIRECT_REPLY")) as mocked_chat,
+        ):
+            await llm_core.generate_reply(
+                user_id="lang-u2",
+                text="Need help with sleep and fatigue recently.",
+            )
+
+        first_prompt = mocked_chat.await_args.kwargs.get("user_prompt", "")
+        self.assertIn("LANG=Please reply in English.", first_prompt)
+
+    async def test_out_of_scope_reply_can_follow_english_preference(self) -> None:
+        fake_runtime = _FakeRuntime()
+        guardrail = GuardrailEngine(fake_runtime.guardrail_settings)
+        planner_json = (
+            '{"tool":"none","arguments":{},"confidence":0.90,"reason":"non-wellness coding question"}'
+        )
+
+        with (
+            patch("app.llm_core.get_prompt_runtime", return_value=fake_runtime),
+            patch("app.llm_core._get_guardrail_engine", return_value=guardrail),
+            patch("app.llm_core.ollama_chat", new=AsyncMock(side_effect=[planner_json])) as mocked_chat,
+        ):
+            reply = await llm_core.generate_reply(
+                user_id="u_off_en",
+                text="How to write Python code?",
+                preferred_language="en",
+            )
+
+        self.assertIn("Traditional Chinese Medicine wellness and herbal guidance", reply)
+        self.assertEqual(mocked_chat.await_count, 1)
 
     async def test_tool_failure_falls_back_to_direct(self) -> None:
         fake_runtime = _FakeRuntime()
@@ -443,9 +503,9 @@ class LlmCoreFallbackTests(unittest.IsolatedAsyncioTestCase):
         ):
             reply = await llm_core.generate_reply(user_id="u7", text="recent constipation and dry mouth")
 
-        self.assertIn("\u3010\u5bf9\u5e94\u75c7\u72b6\u3011", reply)
+        self.assertIn("[Relevant Symptoms]", reply)
         self.assertIn("constipation", reply)
-        self.assertLess(reply.find("\u3010\u5bf9\u5e94\u75c7\u72b6\u3011"), reply.find("\u3010\u4e2d\u836f\u517b\u751f\u5efa\u8bae\u3011"))
+        self.assertLess(reply.find("[Relevant Symptoms]"), reply.find("\u3010\u4e2d\u836f\u517b\u751f\u5efa\u8bae\u3011"))
 
 
 if __name__ == "__main__":

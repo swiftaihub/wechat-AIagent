@@ -15,8 +15,7 @@ from pydantic import BaseModel, Field
 
 from app.llm_core import generate_reply
 from app.tools.constitution_advice import (
-    extract_recent_discomfort_option_values,
-    load_herbal_advice_config,
+    extract_recent_discomfort_options,
 )
 
 logger = logging.getLogger(__name__)
@@ -151,7 +150,7 @@ def _resolve_dynamic_field_options(field: dict[str, Any]) -> list[dict[str, Any]
         return []
 
     try:
-        option_values = extract_recent_discomfort_option_values(load_herbal_advice_config())
+        dynamic_options = extract_recent_discomfort_options()
     except Exception as exc:
         logger.warning(
             "Failed to resolve dynamic intake options for field '%s': %s",
@@ -164,8 +163,20 @@ def _resolve_dynamic_field_options(field: dict[str, Any]) -> list[dict[str, Any]
     overrides = overrides_raw if isinstance(overrides_raw, dict) else {}
 
     options: list[dict[str, Any]] = []
-    for option_value in option_values:
-        label = _normalize_locale_label(overrides.get(option_value), fallback=option_value)
+    for option in dynamic_options:
+        option_value = str(option.get("value", "")).strip()
+        if not option_value:
+            continue
+        label = _normalize_locale_label(option.get("label"), fallback=option_value)
+        override = overrides.get(option_value)
+        if override is not None:
+            label = _normalize_locale_label(
+                {
+                    "zh": str(getattr(override, "get", lambda *_: "")("zh", "")).strip() or label["zh"],
+                    "en": str(getattr(override, "get", lambda *_: "")("en", "")).strip() or label["en"],
+                },
+                fallback=option_value,
+            )
         options.append({"value": option_value, "label": label})
     return options
 
@@ -310,6 +321,7 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     user_id: str | None = None
+    language: str | None = Field(default=None, max_length=16)
 
 
 @router.get("", response_class=HTMLResponse)
@@ -340,7 +352,7 @@ async def ui_chat(payload: ChatRequest) -> dict[str, object]:
 
     try:
         reply = await asyncio.wait_for(
-            generate_reply(user_id=user_id, text=message),
+            generate_reply(user_id=user_id, text=message, preferred_language=payload.language),
             timeout=DEFAULT_REPLY_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
@@ -1012,6 +1024,7 @@ def _build_html_page(
     const TIMESTAMP_KEY = "openclaw_ui_show_timestamp";
     const THEME_KEY = "openclaw_ui_theme";
     const LANGUAGE_KEY = "openclaw_ui_language";
+    const LANGUAGE_EXPLICIT_KEY = "openclaw_ui_language_explicit";
     const PAYLOAD_FIELDS = [
       "age",
       "gender",
@@ -1060,6 +1073,7 @@ def _build_html_page(
     if (!I18N[currentLanguage]) {{
       currentLanguage = "zh";
     }}
+    let languageExplicit = localStorage.getItem(LANGUAGE_EXPLICIT_KEY) === "1";
 
     let statusState = {{ key: "status_ready", elapsed: 0 }};
     let isSending = false;
@@ -1617,7 +1631,11 @@ def _build_html_page(
         const resp = await fetch(CONFIG.apiBaseUrl, {{
           method: "POST",
           headers: {{ "Content-Type": "application/json" }},
-          body: JSON.stringify({{ message: normalized, user_id: userId }}),
+          body: JSON.stringify({{
+            message: normalized,
+            user_id: userId,
+            language: languageExplicit ? currentLanguage : null,
+          }}),
         }});
 
         let data = null;
@@ -1699,6 +1717,8 @@ def _build_html_page(
     langToggleBtn.addEventListener("click", () => {{
       currentLanguage = currentLanguage === "zh" ? "en" : "zh";
       localStorage.setItem(LANGUAGE_KEY, currentLanguage);
+      languageExplicit = true;
+      localStorage.setItem(LANGUAGE_EXPLICIT_KEY, "1");
       applyLanguage();
     }});
 
