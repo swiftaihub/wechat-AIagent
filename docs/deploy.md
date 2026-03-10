@@ -10,7 +10,11 @@ At minimum:
 PORT=8787
 WEBUI_HOST_PORT=8788
 WEBUI_TITLE=OpenClaw Chat
+WEBUI_TITLE_ZH=健康咨询助手
+WEBUI_TITLE_EN=OpenClaw Chat
 WEBUI_WELCOME_MESSAGE=Welcome. Tell me your situation and I will provide practical wellness guidance.
+WEBUI_WELCOME_MESSAGE_ZH=欢迎使用健康咨询助手。请告诉我您的情况，我将提供实用的健康指导。
+WEBUI_WELCOME_MESSAGE_EN=Welcome. Tell me your situation and I will provide practical wellness guidance.
 WEBUI_API_BASE_URL=/ui/api/chat
 WEBUI_CORS_ALLOWED_ORIGINS=
 ```

@@ -14,6 +14,10 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from app.llm_core import generate_reply
+from app.tools.constitution_advice import (
+    extract_recent_discomfort_option_values,
+    load_herbal_advice_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,15 +30,44 @@ WEB_UI_ERROR_TEXT = os.getenv(
     "WECHAT_SYNC_ERROR_TEXT",
     "系统服务异常，请稍后再试。",
 )
-WEBUI_WELCOME_MESSAGE = os.getenv(
-    "WEBUI_WELCOME_MESSAGE",
-    "欢迎使用健康咨询助手。请告诉我你的情况，我会提供实用建议。",
-).strip()
-WEBUI_TITLE = os.getenv("WEBUI_TITLE", "健康咨询助手").strip() or "健康咨询助手"
 WEBUI_INTAKE_CONFIG_PATH = os.getenv(
     "WEBUI_INTAKE_CONFIG_PATH",
     "config/questionaire.private.yaml",
 ).strip()
+
+
+def _looks_ascii_text(value: str) -> bool:
+    return bool(value) and value.isascii()
+
+
+def _load_localized_runtime_text(
+    env_key: str,
+    *,
+    default_zh: str,
+    default_en: str,
+) -> dict[str, str]:
+    direct_value = os.getenv(env_key, "").strip()
+    zh_value = os.getenv(f"{env_key}_ZH", "").strip()
+    en_value = os.getenv(f"{env_key}_EN", "").strip()
+
+    if not zh_value:
+        zh_value = direct_value if direct_value and not _looks_ascii_text(direct_value) else default_zh
+    if not en_value:
+        en_value = direct_value if direct_value and _looks_ascii_text(direct_value) else default_en
+
+    return {"zh": zh_value, "en": en_value}
+
+
+WEBUI_WELCOME_MESSAGE = _load_localized_runtime_text(
+    "WEBUI_WELCOME_MESSAGE",
+    default_zh="欢迎使用健康咨询助手。请告诉我您的情况，我将提供实用的健康指导。",
+    default_en="Welcome. Tell me your situation and I will provide practical wellness guidance.",
+)
+WEBUI_TITLE = _load_localized_runtime_text(
+    "WEBUI_TITLE",
+    default_zh="健康咨询助手",
+    default_en="Health Guidance Assistant",
+)
 
 
 def _normalize_base_path(raw: str | None, default: str = "/ui") -> str:
@@ -73,13 +106,78 @@ def _default_intake_config() -> dict[str, Any]:
     }
 
 
-def _load_intake_config() -> dict[str, Any]:
+def _normalize_locale_label(value: Any, fallback: str = "") -> dict[str, str]:
+    if isinstance(value, dict):
+        zh = str(value.get("zh", "")).strip()
+        en = str(value.get("en", "")).strip()
+        if zh or en:
+            return {
+                "zh": zh or fallback or en,
+                "en": en or fallback or zh,
+            }
+
+    text = str(value or "").strip()
+    if not text:
+        text = fallback
+    return {"zh": text, "en": text}
+
+
+def _coerce_localized_text(
+    value: Any,
+    *,
+    default_zh: str = "",
+    default_en: str = "",
+) -> dict[str, str]:
+    if isinstance(value, dict):
+        return {
+            "zh": str(value.get("zh", "")).strip() or default_zh,
+            "en": str(value.get("en", "")).strip() or default_en,
+        }
+
+    text = str(value or "").strip()
+    if not text:
+        return {"zh": default_zh, "en": default_en}
+    return {"zh": text, "en": text}
+
+
+def _resolve_dynamic_field_options(field: dict[str, Any]) -> list[dict[str, Any]] | None:
+    options_from = field.get("options_from")
+    if not isinstance(options_from, dict):
+        return None
+
+    source = str(options_from.get("source", "")).strip().lower()
+    if source != "herbal_advice_symptoms":
+        logger.warning("Unsupported intake options_from source '%s' for field '%s'", source, field.get("name", ""))
+        return []
+
+    try:
+        option_values = extract_recent_discomfort_option_values(load_herbal_advice_config())
+    except Exception as exc:
+        logger.warning(
+            "Failed to resolve dynamic intake options for field '%s': %s",
+            field.get("name", ""),
+            exc,
+        )
+        return []
+
+    overrides_raw = field.get("option_labels", {})
+    overrides = overrides_raw if isinstance(overrides_raw, dict) else {}
+
+    options: list[dict[str, Any]] = []
+    for option_value in option_values:
+        label = _normalize_locale_label(overrides.get(option_value), fallback=option_value)
+        options.append({"value": option_value, "label": label})
+    return options
+
+
+def _load_intake_config_from_path(config_path: str | Path | None) -> dict[str, Any]:
     fallback = _default_intake_config()
-    if not WEBUI_INTAKE_CONFIG_PATH:
+    raw_config_path = str(config_path or "").strip()
+    if not raw_config_path:
         logger.warning("WEBUI_INTAKE_CONFIG_PATH is empty; intake disabled")
         return fallback
 
-    primary = Path(WEBUI_INTAKE_CONFIG_PATH)
+    primary = Path(raw_config_path)
     candidates = [primary]
     if primary.suffix.lower() == ".yaml":
         candidates.append(primary.with_suffix(".yml"))
@@ -104,7 +202,7 @@ def _load_intake_config() -> dict[str, Any]:
     if loaded_data is None:
         logger.warning(
             "No intake config found at %s (or alternate extension); intake disabled",
-            WEBUI_INTAKE_CONFIG_PATH,
+            raw_config_path,
         )
         return fallback
 
@@ -126,7 +224,22 @@ def _load_intake_config() -> dict[str, Any]:
         field_type = str(field.get("type", "")).strip().lower()
         if not name or field_type not in {"single", "multi", "text"}:
             continue
-        normalized_fields.append(field)
+        normalized_field = dict(field)
+        resolved_options = _resolve_dynamic_field_options(normalized_field)
+        if resolved_options:
+            normalized_field["options"] = resolved_options
+        normalized_field.pop("options_from", None)
+        normalized_field.pop("option_labels", None)
+        if field_type in {"single", "multi"}:
+            options = normalized_field.get("options")
+            if not isinstance(options, list) or not options:
+                logger.warning(
+                    "Skipping intake field '%s' in %s because no options were resolved",
+                    name,
+                    loaded_path,
+                )
+                continue
+        normalized_fields.append(normalized_field)
 
     if not normalized_fields:
         logger.warning("Intake config in %s has no valid fields; intake disabled", loaded_path)
@@ -139,6 +252,54 @@ def _load_intake_config() -> dict[str, Any]:
     merged["auto_collapse_on_submit"] = bool(intake.get("auto_collapse_on_submit", True))
     logger.info("Loaded intake config from %s with %d fields", loaded_path, len(normalized_fields))
     return merged
+
+
+def _load_intake_config() -> dict[str, Any]:
+    return _load_intake_config_from_path(WEBUI_INTAKE_CONFIG_PATH)
+
+
+def _build_intake_payload_from_state(
+    intake_state: dict[str, Any],
+    intake_fields: list[dict[str, Any]],
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "age": "",
+        "gender": "",
+        "sleep": [],
+        "diet": [],
+        "bowel": [],
+        "emotion": [],
+        "exercise": "",
+        "recent_discomfort": "",
+        "recent_discomfort_choice": "",
+        "recent_discomfort_text": "",
+    }
+    field_names = {
+        str(field.get("name", "")).strip()
+        for field in intake_fields
+        if isinstance(field, dict) and str(field.get("name", "")).strip()
+    }
+
+    for key in tuple(payload):
+        value = intake_state.get(key)
+        if isinstance(value, list):
+            payload[key] = value
+        elif isinstance(value, str):
+            payload[key] = value.strip()
+
+    recent_parts: list[str] = []
+    for key in ("recent_discomfort", "recent_discomfort_choice", "recent_discomfort_text"):
+        value = str(payload.get(key, "")).strip()
+        if value and value not in recent_parts:
+            recent_parts.append(value)
+    payload["recent_discomfort"] = "\n".join(recent_parts)
+
+    if "recent_discomfort_choice" not in field_names and not payload["recent_discomfort_choice"]:
+        payload.pop("recent_discomfort_choice")
+    if "recent_discomfort_text" not in field_names and not payload["recent_discomfort_text"]:
+        payload.pop("recent_discomfort_text")
+
+    return payload
 
 
 INTAKE_CONFIG = _load_intake_config()
@@ -202,14 +363,16 @@ async def ui_chat(payload: ChatRequest) -> dict[str, object]:
 
 def _build_html_page(
     *,
-    title: str,
-    welcome_message: str,
+    title: str | dict[str, str],
+    welcome_message: str | dict[str, str],
     api_base_url: str,
     intake_config: dict[str, Any] | None = None,
 ) -> str:
-    safe_title = html.escape(title)
-    title_json = json.dumps(title, ensure_ascii=False)
-    welcome_json = json.dumps(welcome_message, ensure_ascii=False)
+    localized_title = _coerce_localized_text(title)
+    localized_welcome = _coerce_localized_text(welcome_message)
+    safe_title = html.escape(localized_title.get("zh") or localized_title.get("en") or "")
+    title_json = json.dumps(localized_title, ensure_ascii=False)
+    welcome_json = json.dumps(localized_welcome, ensure_ascii=False)
     api_json = json.dumps(api_base_url)
     intake_json = json.dumps(intake_config or _default_intake_config(), ensure_ascii=False)
 
@@ -858,6 +1021,8 @@ def _build_html_page(
       "emotion",
       "exercise",
       "recent_discomfort",
+      "recent_discomfort_choice",
+      "recent_discomfort_text",
     ];
 
     const menuBtn = document.getElementById("menuBtn");
@@ -899,7 +1064,6 @@ def _build_html_page(
     let statusState = {{ key: "status_ready", elapsed: 0 }};
     let isSending = false;
 
-    uiTitle.textContent = CONFIG.title;
     apiBaseLabel.textContent = CONFIG.apiBaseUrl;
 
     let userId = localStorage.getItem(USER_KEY);
@@ -916,6 +1080,10 @@ def _build_html_page(
         return [];
       }}
       return INTAKE_CONFIG.fields;
+    }}
+
+    function hasIntakeField(fieldName) {{
+      return getIntakeFields().some((field) => String((field && field.name) || "") === fieldName);
     }}
 
     function createInitialIntakeState() {{
@@ -953,6 +1121,20 @@ def _build_html_page(
       return fallback;
     }}
 
+    function getLocaleVariants(value) {{
+      if (value && typeof value === "object") {{
+        return [value.zh, value.en]
+          .map((item) => String(item || "").trim())
+          .filter((item, index, array) => item && array.indexOf(item) === index);
+      }}
+      const text = String(value || "").trim();
+      return text ? [text] : [];
+    }}
+
+    function getWelcomeMessageText() {{
+      return getLocaleText(CONFIG.welcomeMessage, "");
+    }}
+
     function formatText(template, values) {{
       let result = template;
       for (const [key, value] of Object.entries(values || {{}})) {{
@@ -982,6 +1164,9 @@ def _build_html_page(
 
     function applyLanguage() {{
       document.documentElement.lang = currentLanguage === "zh" ? "zh-CN" : "en";
+      const localizedTitle = getLocaleText(CONFIG.title, document.title);
+      uiTitle.textContent = localizedTitle;
+      document.title = localizedTitle;
       drawerTitle.textContent = t("drawer_title");
       drawerDesc.textContent = t("drawer_desc");
       sectionConversation.textContent = t("section_conversation");
@@ -1000,6 +1185,15 @@ def _build_html_page(
       hintText.textContent = t("hint");
       langToggleBtn.textContent = "中文/English";
       statusPill.textContent = resolveStatusText(statusState);
+      if (
+        sessionMessages.length === 1 &&
+        sessionMessages[0] &&
+        sessionMessages[0].role === "assistant" &&
+        getLocaleVariants(CONFIG.welcomeMessage).includes(String(sessionMessages[0].text || "").trim())
+      ) {{
+        sessionMessages[0].text = getWelcomeMessageText();
+        persistMessages();
+      }}
       renderMessages();
     }}
 
@@ -1164,7 +1358,7 @@ def _build_html_page(
           }}
 
           if (fieldType === "single") {{
-            intakeState[field] = value;
+            intakeState[field] = String(intakeState[field] || "") === value ? "" : value;
           }} else if (fieldType === "multi") {{
             const selected = Array.isArray(intakeState[field]) ? [...intakeState[field]] : [];
             const index = selected.indexOf(value);
@@ -1256,7 +1450,7 @@ def _build_html_page(
 
     function resetConversation() {{
       sessionMessages = [
-        {{ role: "assistant", text: CONFIG.welcomeMessage, timestamp: nowIso(), error: false }},
+        {{ role: "assistant", text: getWelcomeMessageText(), timestamp: nowIso(), error: false }},
       ];
       persistMessages();
       renderMessages();
@@ -1353,6 +1547,8 @@ def _build_html_page(
         emotion: [],
         exercise: "",
         recent_discomfort: "",
+        recent_discomfort_choice: "",
+        recent_discomfort_text: "",
       }};
 
       for (const key of PAYLOAD_FIELDS) {{
@@ -1362,6 +1558,23 @@ def _build_html_page(
         }} else if (typeof value === "string") {{
           payload[key] = value.trim();
         }}
+      }}
+
+      const recentDiscomfortParts = [];
+      for (const key of ["recent_discomfort", "recent_discomfort_choice", "recent_discomfort_text"]) {{
+        const value = String(payload[key] || "").trim();
+        if (!value || recentDiscomfortParts.includes(value)) {{
+          continue;
+        }}
+        recentDiscomfortParts.push(value);
+      }}
+      payload.recent_discomfort = recentDiscomfortParts.join("\\n");
+
+      if (!hasIntakeField("recent_discomfort_choice") && !payload.recent_discomfort_choice) {{
+        delete payload.recent_discomfort_choice;
+      }}
+      if (!hasIntakeField("recent_discomfort_text") && !payload.recent_discomfort_text) {{
+        delete payload.recent_discomfort_text;
       }}
 
       return payload;
