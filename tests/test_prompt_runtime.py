@@ -64,6 +64,55 @@ class PromptRuntimeTests(unittest.TestCase):
             self.assertIn("CHANNEL=wechat_mp", rendered)
             self.assertIn("MESSAGE=hello", rendered)
 
+    def test_localized_profile_and_guardrail_values(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = Path(tmpdir) / "prompt.private.yaml"
+            cfg.write_text(
+                textwrap.dedent(
+                    """
+                    default_profile: wechat
+                    profiles:
+                      wechat:
+                        system_prompt:
+                          zh: |
+                            系统中文
+                          en: |
+                            SYSTEM_EN
+                        user_prompt_template:
+                          zh: |
+                            用户={user_text}
+                          en: |
+                            USER={user_text}
+                    guardrail:
+                      enabled: true
+                      blocked_response:
+                        zh: 中文拦截
+                        en: English blocked
+                      fallback_response:
+                        zh: 中文兜底
+                        en: English fallback
+                    """
+                ).strip()
+                + "\n",
+                encoding="utf-8",
+            )
+
+            os.environ["PROMPT_CONFIG_PATH"] = str(cfg)
+            runtime = reload_prompt_runtime()
+
+            self.assertEqual(runtime.system_prompt("wechat", language="zh"), "系统中文")
+            self.assertEqual(runtime.system_prompt("wechat", language="en"), "SYSTEM_EN")
+            self.assertEqual(
+                runtime.render_user_prompt(profile="wechat", user_text="hello", language="en"),
+                "USER=hello",
+            )
+
+            guardrail_en = runtime.guardrail_settings_for_language("en")
+            guardrail_zh = runtime.guardrail_settings_for_language("zh")
+            self.assertEqual(guardrail_en.blocked_response, "English blocked")
+            self.assertEqual(guardrail_en.fallback_response, "English fallback")
+            self.assertEqual(guardrail_zh.blocked_response, "中文拦截")
+
     def test_missing_template_variable_falls_back_to_empty_string(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = Path(tmpdir) / "prompt.private.yaml"
