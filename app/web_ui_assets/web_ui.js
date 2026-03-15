@@ -75,8 +75,8 @@
       intake_expand: "展开",
       intake_collapse: "收起",
       intake_required_missing: "请先完成必填项：{{fields}}",
-      intake_payload_prefix: "用户基础信息（constitution_scoring intake）：",
-      intake_submit_notice: "基础信息已提交，正在生成更贴近你的草本建议，请稍候。",
+      intake_payload_prefix: "用户基础信息（product_helper intake）：",
+      intake_submit_notice: "基础信息已提交，正在生成更贴近你的产品与内容推荐，请稍候。",
       aria_open_menu: "打开菜单",
       aria_close_menu: "关闭菜单",
     },
@@ -140,8 +140,8 @@
       intake_expand: "Expand",
       intake_collapse: "Collapse",
       intake_required_missing: "Please complete required fields: {{fields}}",
-      intake_payload_prefix: "User basic information (constitution_scoring intake):",
-      intake_submit_notice: "Information submitted. Generating a more tailored herbal guidance path now...",
+      intake_payload_prefix: "User basic information (product_helper intake):",
+      intake_submit_notice: "Information submitted. Generating a more tailored product and content recommendation path now...",
       aria_open_menu: "Open menu",
       aria_close_menu: "Close menu",
     },
@@ -153,19 +153,6 @@
   const THEME_KEY = "openclaw_ui_theme";
   const LANGUAGE_KEY = "openclaw_ui_language";
   const LANGUAGE_EXPLICIT_KEY = "openclaw_ui_language_explicit";
-  const PAYLOAD_FIELDS = [
-    "age",
-    "gender",
-    "sleep",
-    "diet",
-    "bowel",
-    "emotion",
-    "exercise",
-    "recent_discomfort",
-    "recent_discomfort_choice",
-    "recent_discomfort_text",
-  ];
-
   const menuBtn = document.getElementById("menuBtn");
   const drawerCloseBtn = document.getElementById("drawerCloseBtn");
   const langToggleBtn = document.getElementById("langToggleBtn");
@@ -209,14 +196,28 @@
     node.textContent = CONFIG.apiBaseUrl;
   });
 
+  function createNewUserId() {
+    return "web-" + Math.random().toString(16).slice(2, 12);
+  }
+
+  function syncUserIdLabels() {
+    userIdLabels.forEach((node) => {
+      node.textContent = userId;
+    });
+  }
+
+  function setUserId(nextUserId) {
+    userId = String(nextUserId || "").trim() || createNewUserId();
+    localStorage.setItem(USER_KEY, userId);
+    syncUserIdLabels();
+  }
+
   let userId = localStorage.getItem(USER_KEY);
   if (!userId) {
-    userId = "web-" + Math.random().toString(16).slice(2, 12);
+    userId = createNewUserId();
     localStorage.setItem(USER_KEY, userId);
   }
-  userIdLabels.forEach((node) => {
-    node.textContent = userId;
-  });
+  syncUserIdLabels();
 
   function getIntakeFields() {
     if (!INTAKE_CONFIG || !Array.isArray(INTAKE_CONFIG.fields)) {
@@ -227,6 +228,84 @@
 
   function hasIntakeField(fieldName) {
     return getIntakeFields().some((field) => String((field && field.name) || "") === fieldName);
+  }
+
+  function normalizeMatchValues(value) {
+    if (Array.isArray(value)) {
+      return value.map((item) => String(item || "").trim()).filter(Boolean);
+    }
+    const text = String(value || "").trim();
+    return text ? [text] : [];
+  }
+
+  function intakeFieldIsVisible(field, state = intakeState) {
+    const fieldName = String((field && field.name) || "");
+    if (!fieldName) {
+      return false;
+    }
+    if (fieldName === "use_case") {
+      return true;
+    }
+
+    const showIf = field && typeof field.show_if === "object" ? field.show_if : null;
+    if (!showIf || Array.isArray(showIf) || Object.keys(showIf).length === 0) {
+      return Boolean(String((state && state.use_case) || "").trim());
+    }
+
+    return Object.entries(showIf).every(([dependencyName, expectedValue]) => {
+      const expectedValues = new Set(normalizeMatchValues(expectedValue));
+      const currentValues = new Set(normalizeMatchValues(state ? state[dependencyName] : ""));
+      if (expectedValues.size === 0 || currentValues.size === 0) {
+        return false;
+      }
+      for (const currentValue of currentValues) {
+        if (expectedValues.has(currentValue)) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }
+
+  function getUseCaseField() {
+    return getIntakeFields().find((field) => String((field && field.name) || "") === "use_case") || null;
+  }
+
+  function getVisibleIntakeFields(state = intakeState) {
+    return getIntakeFields().filter((field) => intakeFieldIsVisible(field, state));
+  }
+
+  function getSupplementalIntakeFields(state = intakeState) {
+    return getVisibleIntakeFields(state).filter((field) => String((field && field.name) || "") !== "use_case");
+  }
+
+  function sanitizeIntakeState(nextState) {
+    const sanitized = createInitialIntakeState();
+    const source = nextState && typeof nextState === "object" ? nextState : {};
+
+    for (const field of getIntakeFields()) {
+      const fieldName = String((field && field.name) || "");
+      if (!fieldName) {
+        continue;
+      }
+      const incomingValue = source[fieldName];
+      if (field.type === "multi") {
+        sanitized[fieldName] = Array.isArray(incomingValue)
+          ? incomingValue.map((item) => String(item || "").trim()).filter(Boolean)
+          : [];
+      } else {
+        sanitized[fieldName] = typeof incomingValue === "string" ? incomingValue : String(incomingValue || "").trim();
+      }
+    }
+
+    for (const field of getIntakeFields()) {
+      const fieldName = String((field && field.name) || "");
+      if (!fieldName || intakeFieldIsVisible(field, sanitized)) {
+        continue;
+      }
+      sanitized[fieldName] = field.type === "multi" ? [] : "";
+    }
+    return sanitized;
   }
 
   function createInitialIntakeState() {
@@ -241,7 +320,7 @@
     return state;
   }
 
-  let intakeState = createInitialIntakeState();
+  let intakeState = sanitizeIntakeState(createInitialIntakeState());
   let intakeCollapsed = false;
   let intakeSubmitting = false;
   let intakeError = "";
@@ -353,7 +432,7 @@
       persistMessages();
     }
 
-    renderMessages();
+    renderMessages({ preserveScroll: true });
   }
 
   function setDrawer(open) {
@@ -447,28 +526,42 @@
     const descriptionText = getLocaleText(INTAKE_CONFIG.description, t("intake_description"));
     const submitLabel = intakeSubmitting ? t("intake_submitting") : getLocaleText(INTAKE_CONFIG.submit_button, t("intake_submit"));
     const resetLabel = getLocaleText(INTAKE_CONFIG.reset_button, t("intake_reset"));
+    const useCaseField = getUseCaseField();
+    const supplementalFields = getSupplementalIntakeFields();
+    const hasUseCase = Boolean(String(intakeState.use_case || "").trim());
+    const canToggle = hasUseCase && supplementalFields.length > 0;
     const toggleLabel = intakeCollapsed ? t("intake_expand") : t("intake_collapse");
-    const bodyStyle = intakeCollapsed ? "display:none;" : "";
-
-    const fieldsHtml = getIntakeFields()
-      .map((field) => buildIntakeFieldHtml(field))
-      .join("");
+    const descriptionHtml = intakeCollapsed ? "" : `<div class="intake-desc">${escapeHtml(descriptionText)}</div>`;
+    const bodyStyle = intakeCollapsed || !hasUseCase ? "display:none;" : "";
+    const primaryFieldHtml = useCaseField ? buildIntakeFieldHtml(useCaseField) : "";
+    const fieldsHtml = supplementalFields.map((field) => buildIntakeFieldHtml(field)).join("");
+    const toggleHtml = canToggle
+      ? `<button type="button" class="intake-toggle" id="intakeToggleBtn">${escapeHtml(toggleLabel)}</button>`
+      : "";
+    const actionsHtml = hasUseCase
+      ? `
+        <div class="intake-actions">
+          <button type="button" class="intake-submit" id="intakeSubmitBtn" ${isSending || intakeSubmitting ? "disabled" : ""}>${escapeHtml(submitLabel)}</button>
+          <button type="button" class="intake-reset" id="intakeResetBtn" ${isSending || intakeSubmitting ? "disabled" : ""}>${escapeHtml(resetLabel)}</button>
+        </div>
+      `
+      : "";
 
     return `
       <div class="intake-header">
         <div>
           <div class="intake-title">${escapeHtml(titleText)}</div>
-          <div class="intake-desc">${escapeHtml(descriptionText)}</div>
+          ${descriptionHtml}
         </div>
-        <button type="button" class="intake-toggle" id="intakeToggleBtn">${escapeHtml(toggleLabel)}</button>
+        ${toggleHtml}
+      </div>
+      <div class="intake-primary">
+        ${primaryFieldHtml}
       </div>
       <div class="intake-body" style="${bodyStyle}">
         ${fieldsHtml}
         <div class="intake-error" id="intakeErrorText">${escapeHtml(intakeError)}</div>
-        <div class="intake-actions">
-          <button type="button" class="intake-submit" id="intakeSubmitBtn" ${isSending || intakeSubmitting ? "disabled" : ""}>${escapeHtml(submitLabel)}</button>
-          <button type="button" class="intake-reset" id="intakeResetBtn" ${isSending || intakeSubmitting ? "disabled" : ""}>${escapeHtml(resetLabel)}</button>
-        </div>
+        ${actionsHtml}
       </div>
     `;
   }
@@ -499,7 +592,7 @@
     if (toggleBtn) {
       toggleBtn.addEventListener("click", () => {
         intakeCollapsed = !intakeCollapsed;
-        renderMessages();
+        renderMessages({ preserveScroll: true });
       });
     }
 
@@ -513,9 +606,10 @@
     const resetBtn = row.querySelector("#intakeResetBtn");
     if (resetBtn) {
       resetBtn.addEventListener("click", () => {
-        intakeState = createInitialIntakeState();
+        intakeState = sanitizeIntakeState(createInitialIntakeState());
+        intakeCollapsed = false;
         intakeError = "";
-        renderMessages();
+        renderMessages({ preserveScroll: true });
       });
     }
 
@@ -529,7 +623,12 @@
         }
 
         if (fieldType === "single") {
-          intakeState[field] = String(intakeState[field] || "") === value ? "" : value;
+          if (field === "use_case") {
+            intakeState[field] = value;
+            intakeCollapsed = false;
+          } else {
+            intakeState[field] = String(intakeState[field] || "") === value ? "" : value;
+          }
         } else if (fieldType === "multi") {
           const selected = Array.isArray(intakeState[field]) ? [...intakeState[field]] : [];
           const index = selected.indexOf(value);
@@ -541,8 +640,12 @@
           intakeState[field] = selected;
         }
 
-        updateIntakeOptionButtons(field, fieldType);
+        intakeState = sanitizeIntakeState(intakeState);
+        if (field !== "use_case") {
+          updateIntakeOptionButtons(field, fieldType);
+        }
         clearIntakeErrorInView();
+        renderMessages({ preserveScroll: true });
       });
     });
 
@@ -554,6 +657,7 @@
           return;
         }
         intakeState[field] = textarea.value;
+        intakeState = sanitizeIntakeState(intakeState);
         autoResizeTextarea(textarea);
       });
     });
@@ -570,11 +674,11 @@
     }
 
     const intakeRow = document.createElement("div");
-    intakeRow.className = "row assistant intake-card-row";
+    intakeRow.className = `row assistant intake-card-row${intakeCollapsed ? " is-collapsed" : ""}`;
     intakeRow.id = "intakeCardRow";
 
     const intakeBubble = document.createElement("div");
-    intakeBubble.className = "bubble intake-card";
+    intakeBubble.className = `bubble intake-card${intakeCollapsed ? " is-collapsed" : ""}`;
     intakeBubble.innerHTML = buildIntakeCardHtml();
     intakeRow.appendChild(intakeBubble);
 
@@ -588,7 +692,10 @@
     bindIntakeEvents(intakeRow);
   }
 
-  function renderMessages() {
+  function renderMessages(options = {}) {
+    const preserveScroll = Boolean(options.preserveScroll);
+    const scrollToBottom = Boolean(options.scrollToBottom);
+    const previousScrollTop = messages.scrollTop;
     messages.innerHTML = "";
 
     if (sessionMessages.length === 0) {
@@ -613,7 +720,13 @@
     }
 
     renderIntakeCard();
-    messages.scrollTop = messages.scrollHeight;
+    if (scrollToBottom) {
+      messages.scrollTop = messages.scrollHeight;
+      return;
+    }
+    if (preserveScroll) {
+      messages.scrollTop = Math.min(previousScrollTop, Math.max(0, messages.scrollHeight - messages.clientHeight));
+    }
   }
 
   function addMessage(role, text, options = {}) {
@@ -624,13 +737,13 @@
       error: Boolean(options.error),
     });
     persistMessages();
-    renderMessages();
+    renderMessages({ scrollToBottom: true });
   }
 
   function resetConversation() {
     sessionMessages = [{ role: "assistant", text: getWelcomeMessageText(), timestamp: nowIso(), error: false }];
     persistMessages();
-    renderMessages();
+    renderMessages({ scrollToBottom: true });
     setStatusByKey("status_ready");
   }
 
@@ -647,7 +760,7 @@
         return;
       }
       sessionMessages = parsed;
-      renderMessages();
+      renderMessages({ scrollToBottom: true });
     } catch (_err) {
       resetConversation();
     }
@@ -696,12 +809,17 @@
   }
 
   function validateIntakePayload() {
-    const requiredSingles = getIntakeFields().filter((field) => field.type === "single" && field.required);
+    const requiredFields = getVisibleIntakeFields().filter((field) => field.required);
     const missingLabels = [];
 
-    for (const field of requiredSingles) {
-      const value = String(intakeState[field.name] || "").trim();
-      if (!value) {
+    for (const field of requiredFields) {
+      const value = intakeState[field.name];
+      const isMissing =
+        value === null ||
+        value === undefined ||
+        (Array.isArray(value) && value.length === 0) ||
+        (!Array.isArray(value) && String(value || "").trim() === "");
+      if (isMissing) {
         missingLabels.push(getLocaleText(field.label, field.name));
       }
     }
@@ -719,43 +837,42 @@
   }
 
   function buildIntakePayload() {
-    const payload = {
-      age: "",
-      gender: "",
-      sleep: [],
-      diet: [],
-      bowel: [],
-      emotion: [],
-      exercise: "",
-      recent_discomfort: "",
-      recent_discomfort_choice: "",
-      recent_discomfort_text: "",
-    };
-
-    for (const key of PAYLOAD_FIELDS) {
+    const payload = {};
+    for (const field of getVisibleIntakeFields()) {
+      const key = field.name;
       const value = intakeState[key];
       if (Array.isArray(value)) {
-        payload[key] = value;
+        const items = value.filter((item) => String(item || "").trim());
+        if (items.length > 0) {
+          payload[key] = items;
+        }
       } else if (typeof value === "string") {
-        payload[key] = value.trim();
+        const trimmed = value.trim();
+        if (trimmed) {
+          payload[key] = trimmed;
+        }
       }
     }
 
     const recentDiscomfortParts = [];
-    for (const key of ["recent_discomfort", "recent_discomfort_choice", "recent_discomfort_text"]) {
-      const value = String(payload[key] || "").trim();
-      if (!value || recentDiscomfortParts.includes(value)) {
-        continue;
+    for (const key of ["recent_discomfort_multi", "free_text_recent_discomfort"]) {
+      const value = payload[key];
+      if (Array.isArray(value)) {
+        value.forEach((item) => {
+          const trimmed = String(item || "").trim();
+          if (trimmed && !recentDiscomfortParts.includes(trimmed)) {
+            recentDiscomfortParts.push(trimmed);
+          }
+        });
+      } else {
+        const trimmed = String(value || "").trim();
+        if (trimmed && !recentDiscomfortParts.includes(trimmed)) {
+          recentDiscomfortParts.push(trimmed);
+        }
       }
-      recentDiscomfortParts.push(value);
     }
-    payload.recent_discomfort = recentDiscomfortParts.join("\n");
-
-    if (!hasIntakeField("recent_discomfort_choice") && !payload.recent_discomfort_choice) {
-      delete payload.recent_discomfort_choice;
-    }
-    if (!hasIntakeField("recent_discomfort_text") && !payload.recent_discomfort_text) {
-      delete payload.recent_discomfort_text;
+    if (recentDiscomfortParts.length > 0) {
+      payload.recent_discomfort_combined = recentDiscomfortParts;
     }
 
     return payload;
@@ -776,7 +893,7 @@
     sendBtn.disabled = true;
     if (fromIntake) {
       intakeSubmitting = true;
-      renderMessages();
+      renderMessages({ preserveScroll: true });
     }
 
     addMessage("user", displayText);
@@ -790,7 +907,7 @@
       error: false,
     });
     persistMessages();
-    renderMessages();
+    renderMessages({ scrollToBottom: true });
 
     try {
       const resp = await fetch(CONFIG.apiBaseUrl, {
@@ -822,7 +939,7 @@
         error: Boolean(data.timed_out),
       };
       persistMessages();
-      renderMessages();
+      renderMessages({ scrollToBottom: true });
 
       const elapsed = Number(data.elapsed_ms || 0);
       if (data.timed_out) {
@@ -839,7 +956,7 @@
         error: true,
       };
       persistMessages();
-      renderMessages();
+      renderMessages({ scrollToBottom: true });
       setStatusByKey("status_failed");
     } finally {
       isSending = false;
@@ -849,7 +966,7 @@
         if (success && INTAKE_CONFIG.auto_collapse_on_submit) {
           intakeCollapsed = true;
         }
-        renderMessages();
+        renderMessages({ preserveScroll: true });
       }
     }
 
@@ -862,7 +979,7 @@
     }
 
     if (!validateIntakePayload()) {
-      renderMessages();
+      renderMessages({ preserveScroll: true });
       return;
     }
 
@@ -889,6 +1006,11 @@
   });
 
   function startNewChat() {
+    setUserId(createNewUserId());
+    intakeState = sanitizeIntakeState(createInitialIntakeState());
+    intakeCollapsed = false;
+    intakeSubmitting = false;
+    intakeError = "";
     resetConversation();
     setDrawer(false);
     input.focus();
@@ -899,9 +1021,14 @@
   heroResetBtn.addEventListener("click", startNewChat);
 
   clearChatBtn.addEventListener("click", () => {
-    sessionMessages = [];
+    setUserId(createNewUserId());
+    intakeState = sanitizeIntakeState(createInitialIntakeState());
+    intakeCollapsed = false;
+    intakeSubmitting = false;
+    intakeError = "";
+    sessionMessages = [{ role: "assistant", text: getWelcomeMessageText(), timestamp: nowIso(), error: false }];
     persistMessages();
-    renderMessages();
+    renderMessages({ scrollToBottom: true });
     setStatusByKey("status_cleared");
     setDrawer(false);
   });

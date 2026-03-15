@@ -1,0 +1,25 @@
+{
+  "slug": "tea-as-a-giftable-ritual",
+  "title": {
+    "en": "Tea as a Giftable Ritual",
+    "zh": "把茶饮做成适合礼赠的仪式体验"
+  },
+  "excerpt": {
+    "en": "Placeholder editorial content about premium presentation, gifting occasions, and why tea can feel more personal than generic wellness products.",
+    "zh": "占位编辑内容，讨论精品呈现、礼赠场景，以及为什么茶比普通保健商品更有情感温度。"
+  },
+  "category": {
+    "en": "Brand story",
+    "zh": "品牌故事"
+  },
+  "tags": {
+    "en": ["Gifting", "Brand", "Placeholder"],
+    "zh": ["礼赠", "品牌", "占位内容"]
+  },
+  "coverImage": "/images/articles/tea-ritual.jpg",
+  "featured": false,
+  "publishedAt": "2026-03-08",
+  "readingTheme": "serif",
+  "relatedProducts": ["crimson-gold-radiance-tea", "gilded-cordyceps-reserve-tea", "rosy-glow-nourish-tea"],
+  "relatedIngredients": ["rose", "saffron", "cordyceps", "longan"]
+}
