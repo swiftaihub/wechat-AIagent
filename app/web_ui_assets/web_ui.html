@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>__WEBUI_PAGE_TITLE__</title>
+  <meta name="description" content="__WEBUI_META_DESCRIPTION__" />
+  <meta name="theme-color" content="#f8f3eb" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="__WEBUI_CSS_URL__" />
+</head>
+<body>
+  <div class="page-shell">
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+    <div class="ambient ambient-three" aria-hidden="true"></div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <aside class="drawer" id="drawer" aria-hidden="true">
+      <div class="drawer__header">
+        <div>
+          <p class="drawer__eyebrow" data-i18n="drawer_eyebrow">Studio controls</p>
+          <h2 id="drawerTitle" data-i18n="drawer_title">Menu</h2>
+          <p class="drawer-sub" id="drawerDesc" data-i18n="drawer_desc">Session tools and display settings</p>
+        </div>
+        <button class="icon-button icon-button--soft" id="drawerCloseBtn" type="button" aria-label="Close menu">
+          <span class="icon-close" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <div class="menu-section">
+        <div class="menu-section-title" id="sectionConversation" data-i18n="section_conversation">Conversation</div>
+        <button class="menu-btn-item" id="newChatBtn" type="button" data-i18n="new_chat">New chat</button>
+        <button class="menu-btn-item" id="clearChatBtn" type="button" data-i18n="clear_chat">Clear messages</button>
+        <button class="menu-btn-item" id="exportTxtBtn" type="button" data-i18n="export_txt">Export TXT</button>
+        <button class="menu-btn-item" id="exportJsonBtn" type="button" data-i18n="export_json">Export JSON</button>
+      </div>
+
+      <div class="menu-section">
+        <div class="menu-section-title" id="sectionDisplay" data-i18n="section_display">Display</div>
+        <label class="toggle">
+          <span id="toggleTimestampLabel" data-i18n="show_timestamp">Show timestamps</span>
+          <input type="checkbox" id="toggleTimestamp" />
+        </label>
+        <button class="menu-btn-item" id="toggleThemeBtn" type="button" data-i18n="toggle_theme">Toggle light/dark theme</button>
+      </div>
+
+      <div class="menu-section">
+        <div class="menu-section-title" id="sectionRuntime" data-i18n="section_runtime">Runtime</div>
+        <div class="runtime-panel">
+          <div class="runtime-panel__label" id="runtimeApiLabel" data-i18n="runtime_api">API</div>
+          <code data-api-base-label="1"></code>
+        </div>
+        <div class="runtime-panel">
+          <div class="runtime-panel__label" id="runtimeUserLabel" data-i18n="runtime_user">User ID</div>
+          <code data-user-id-label="1"></code>
+        </div>
+      </div>
+    </aside>
+
+    <div class="workspace" id="appRoot">
+      <aside class="brand-panel">
+        <div class="brand-panel__inner">
+          <div class="brand-badge" id="heroBadge" data-i18n="hero_badge">Guided Wellness Companion</div>
+
+          <div class="brand-mark">
+            <div class="brand-seal" aria-hidden="true">
+              <span class="brand-seal__ring"></span>
+              <span class="brand-seal__stem"></span>
+            </div>
+            <div>
+              <p class="brand-mark__caption" id="heroKicker" data-i18n="hero_kicker">Integrated with the herbal wellness collection</p>
+              <h1 class="brand-panel__title" id="uiTitle">Health Guidance Assistant</h1>
+            </div>
+          </div>
+
+          <p class="brand-panel__lead" id="heroLead"></p>
+
+          <div class="feature-grid">
+            <article class="feature-card">
+              <p class="feature-card__eyebrow" data-i18n="feature_1_eyebrow">Discovery</p>
+              <h2 class="feature-card__title" data-i18n="feature_1_title">Bilingual guidance</h2>
+              <p class="feature-card__body" data-i18n="feature_1_body">Switch seamlessly between Chinese and English while keeping the same calm recommendation flow.</p>
+            </article>
+
+            <article class="feature-card">
+              <p class="feature-card__eyebrow" data-i18n="feature_2_eyebrow">Intake</p>
+              <h2 class="feature-card__title" data-i18n="feature_2_title">Structured wellness prompts</h2>
+              <p class="feature-card__body" data-i18n="feature_2_body">Capture recent discomforts and daily patterns in a format the assistant can turn into tailored guidance.</p>
+            </article>
+
+            <article class="feature-card">
+              <p class="feature-card__eyebrow" data-i18n="feature_3_eyebrow">Experience</p>
+              <h2 class="feature-card__title" data-i18n="feature_3_title">Aligned with the premium storefront</h2>
+              <p class="feature-card__body" data-i18n="feature_3_body">The same editorial tone, warm palette, and refined interaction style now extend into the AI experience.</p>
+            </article>
+          </div>
+
+          <div class="ritual-note">
+            <p class="ritual-note__eyebrow" data-i18n="ritual_eyebrow">Care note</p>
+            <h2 class="ritual-note__title" data-i18n="ritual_title">A calm discovery ritual</h2>
+            <p class="ritual-note__body" data-i18n="ritual_body">This assistant is designed for educational wellness guidance and product discovery. It does not diagnose or replace care from a licensed medical professional.</p>
+          </div>
+        </div>
+      </aside>
+
+      <main class="chat-panel">
+        <header class="topbar">
+          <button class="icon-button" id="menuBtn" type="button" aria-label="Open menu">
+            <span class="menu-icon" aria-hidden="true"></span>
+          </button>
+
+          <div class="topbar__meta">
+            <div>
+              <p class="topbar__label" id="topbarLabel" data-i18n="topbar_label">Signature Helper AI</p>
+              <div class="topbar__runtime">
+                <span class="runtime-inline-label" id="runtimeApiInlineLabel" data-i18n="runtime_api_inline">API endpoint</span>
+                <code data-api-base-label="1"></code>
+              </div>
+            </div>
+            <div class="status" id="statusPill">Ready</div>
+          </div>
+
+          <button class="lang-btn" id="langToggleBtn" type="button">中文 / English</button>
+        </header>
+
+        <section class="hero-strip">
+          <div class="hero-strip__copy">
+            <p class="hero-strip__eyebrow" id="heroStripEyebrow" data-i18n="hero_strip_eyebrow">AI recommendation flow</p>
+            <p class="hero-strip__text" id="heroStripText"></p>
+          </div>
+          <button class="secondary-btn secondary-btn--compact" id="heroResetBtn" type="button" data-i18n="hero_reset">Start fresh</button>
+        </section>
+
+        <section class="messages-panel">
+          <section id="messages" aria-live="polite"></section>
+        </section>
+
+        <section class="composer">
+          <div class="composer-card">
+            <div class="composer-card__header">
+              <div>
+                <p class="composer-eyebrow" id="composerEyebrow" data-i18n="composer_eyebrow">Conversation</p>
+                <h2 class="composer-title" id="composerTitle" data-i18n="composer_title">Describe your current needs or ritual goals</h2>
+              </div>
+              <div class="runtime-chip">
+                <span id="runtimeUserInlineLabel" data-i18n="runtime_user_inline">Session ID</span>
+                <code data-user-id-label="1"></code>
+              </div>
+            </div>
+
+            <form id="chatForm">
+              <label class="sr-only" for="messageInput" id="messageInputLabel" data-i18n="message_input_label">Message</label>
+              <textarea id="messageInput" placeholder="Type your message..." required></textarea>
+              <div class="composer-actions">
+                <p class="hint" id="hintText" data-i18n="hint">Press Enter to send, Shift + Enter for newline.</p>
+                <div class="composer-actions__buttons">
+                  <button class="secondary-btn" id="newChatInlineBtn" type="button" data-i18n="new_chat">New chat</button>
+                  <button id="sendBtn" type="submit">Send</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = __WEBUI_CONFIG_JSON__;
+    const INTAKE_CONFIG = __WEBUI_INTAKE_CONFIG_JSON__;
+    window.__WEBUI_BOOT__ = { CONFIG, INTAKE_CONFIG };
+  </script>
+  <script src="__WEBUI_JS_URL__" defer></script>
+</body>
+</html>

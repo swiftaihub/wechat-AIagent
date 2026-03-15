@@ -28,6 +28,8 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("const CONFIG", resp.text)
         self.assertIn("const INTAKE_CONFIG", resp.text)
         self.assertIn("Menu", resp.text)
+        self.assertIn("web_ui.css", resp.text)
+        self.assertIn("web_ui.js", resp.text)
 
     def test_html_page_includes_runtime_welcome_message(self) -> None:
         html = _build_html_page(
@@ -37,6 +39,16 @@ class WebUiTests(unittest.TestCase):
         )
         self.assertIn("Custom welcome message", html)
         self.assertIn("/ui/api/chat", html)
+        self.assertIn("window.__WEBUI_BOOT__", html)
+
+    def test_ui_assets_are_served(self) -> None:
+        css_response = self.client.get(f"{webui_base_path}/assets/web_ui.css")
+        js_response = self.client.get(f"{webui_base_path}/assets/web_ui.js")
+
+        self.assertEqual(css_response.status_code, 200)
+        self.assertEqual(js_response.status_code, 200)
+        self.assertIn("font-display", css_response.text)
+        self.assertIn("window.__WEBUI_BOOT__", js_response.text)
 
     def test_ui_chat_success(self) -> None:
         with patch("app.web_ui.generate_reply", new=AsyncMock(return_value="ok")):
@@ -192,10 +204,10 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("Recent discomfort (single choice)", html)
         self.assertIn("Fatigue", html)
         self.assertIn("Other discomfort symptoms", html)
-        self.assertIn('getLocaleText(CONFIG.title, document.title)', html)
-        self.assertIn('getWelcomeMessageText()', html)
-        self.assertIn('String(intakeState[field] || "") === value ? "" : value', html)
-        self.assertIn('language: languageExplicit ? currentLanguage : null', html)
+        self.assertIn("web_ui.css", html)
+        self.assertIn("web_ui.js", html)
+        self.assertIn("中文 / English", html)
+        self.assertIn("window.__WEBUI_BOOT__ = { CONFIG, INTAKE_CONFIG }", html)
 
     def test_intake_dynamic_options_use_localized_labels_from_herbal_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
