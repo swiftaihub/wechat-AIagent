@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 from app.llm_core import generate_reply
+from app.product_helper.content import load_catalog_bundle
 from app.product_helper.intake import build_visible_intake_payload
 from app.tools.constitution_advice import (
     extract_recent_discomfort_options,
@@ -98,7 +99,7 @@ def _default_intake_config() -> dict[str, Any]:
     return {
         "enabled": False,
         "auto_collapse_on_submit": True,
-        "title": {"zh": "基础信息快速采集", "en": "Quick intake"},
+        "title": {"zh": "快速了解你的需求", "en": "Quick intake"},
         "description": {
             "zh": "先给 AI 一个大致方向，它会更容易把产品、原料和文章推荐收得更准。",
             "en": "Give the assistant a little context first so it can narrow products, ingredients, and articles more clearly.",
@@ -153,12 +154,25 @@ def _resolve_dynamic_field_options(field: dict[str, Any]) -> list[dict[str, Any]
         return None
 
     source = str(options_from.get("source", "")).strip().lower()
-    if source != "herbal_advice_symptoms":
-        logger.warning("Unsupported intake options_from source '%s' for field '%s'", source, field.get("name", ""))
-        return []
-
     try:
-        dynamic_options = extract_recent_discomfort_options()
+        if source == "herbal_advice_symptoms":
+            dynamic_options = extract_recent_discomfort_options()
+        elif source == "product_catalog":
+            bundle = load_catalog_bundle()
+            dynamic_options = [
+                {
+                    "value": product.slug,
+                    "label": {
+                        "zh": product.name["zh"],
+                        "en": product.name["en"],
+                    },
+                }
+                for product in bundle.products
+                if product.status == "active"
+            ]
+        else:
+            logger.warning("Unsupported intake options_from source '%s' for field '%s'", source, field.get("name", ""))
+            return []
     except Exception as exc:
         logger.warning(
             "Failed to resolve dynamic intake options for field '%s': %s",
@@ -996,7 +1010,7 @@ def _build_html_page(
         status_done: "完成（{{elapsed}} ms）",
         status_failed: "请求失败",
         request_failed: "请求失败，请检查服务状态后重试。",
-        intake_title: "基础信息快速采集",
+        intake_title: "快速了解你的需求",
         intake_description: "可快速点选并提交，系统会将信息结构化发送给 AI。",
         intake_submit: "提交",
         intake_submitting: "提交中...",

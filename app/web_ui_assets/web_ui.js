@@ -3,8 +3,8 @@
   const CONFIG = boot.CONFIG || {
     title: { zh: "健康咨询助手", en: "Health Guidance Assistant" },
     welcomeMessage: {
-      zh: "欢迎使用健康咨询助手。请告诉我您的情况，我将提供实用的健康指导。",
-      en: "Welcome. Tell me your situation and I will provide practical wellness guidance.",
+      zh: "欢迎来到品牌 AI Helper。你可以告诉我最近的状态、送礼方向，或想先了解哪类草本茶。",
+      en: "Welcome to the brand AI helper. Share how you have been feeling, what you might want to gift, or the tea direction you want to explore.",
     },
     apiBaseUrl: "/ui/api/chat",
   };
@@ -67,7 +67,7 @@
       request_failed: "请求失败，请检查服务状态后重试。",
       empty_state_title: "从一个问题开始",
       empty_state_body: "可以描述你最近的体感、作息、想改善的饮茶体验，或你正在为谁寻找一款更合适的草本茶。",
-      intake_title: "基础信息快速采集",
+      intake_title: "快速了解你的需求",
       intake_description: "可快速点选并提交，系统会将信息结构化发送给 AI。",
       intake_submit: "提交",
       intake_submitting: "提交中...",
@@ -157,6 +157,10 @@
   const drawerCloseBtn = document.getElementById("drawerCloseBtn");
   const langToggleBtn = document.getElementById("langToggleBtn");
   const drawer = document.getElementById("drawer");
+  const brandPanel = document.getElementById("brandPanel");
+  const brandPanelBtn = document.getElementById("brandPanelBtn");
+  const brandPanelCloseBtn = document.getElementById("brandPanelCloseBtn");
+  const brandTriggerTitle = document.getElementById("brandTriggerTitle");
   const overlay = document.getElementById("overlay");
   const newChatBtn = document.getElementById("newChatBtn");
   const newChatInlineBtn = document.getElementById("newChatInlineBtn");
@@ -324,6 +328,7 @@
   let intakeCollapsed = false;
   let intakeSubmitting = false;
   let intakeError = "";
+  let openDropdownField = "";
 
   function t(key) {
     const dict = I18N[currentLanguage] || I18N.zh;
@@ -355,6 +360,19 @@
 
   function getWelcomeMessageText() {
     return getLocaleText(CONFIG.welcomeMessage, "");
+  }
+
+  function normalizeSingleWelcomeMessage() {
+    if (sessionMessages.length !== 1 || !sessionMessages[0] || sessionMessages[0].role !== "assistant") {
+      return false;
+    }
+    const nextWelcome = getWelcomeMessageText();
+    if (String(sessionMessages[0].text || "") === nextWelcome) {
+      return false;
+    }
+    sessionMessages[0].text = nextWelcome;
+    persistMessages();
+    return true;
   }
 
   function formatText(template, values) {
@@ -396,6 +414,9 @@
     document.documentElement.lang = currentLanguage === "zh" ? "zh-CN" : "en";
     const localizedTitle = getLocaleText(CONFIG.title, document.title);
     uiTitle.textContent = localizedTitle;
+    if (brandTriggerTitle) {
+      brandTriggerTitle.textContent = localizedTitle;
+    }
     heroLead.textContent = getWelcomeMessageText();
     heroStripText.textContent = t("hero_strip_text");
     document.title = localizedTitle;
@@ -421,24 +442,47 @@
     statusPill.textContent = resolveStatusText(statusState);
     menuBtn.setAttribute("aria-label", t("aria_open_menu"));
     drawerCloseBtn.setAttribute("aria-label", t("aria_close_menu"));
-
-    if (
-      sessionMessages.length === 1 &&
-      sessionMessages[0] &&
-      sessionMessages[0].role === "assistant" &&
-      getLocaleVariants(CONFIG.welcomeMessage).includes(String(sessionMessages[0].text || "").trim())
-    ) {
-      sessionMessages[0].text = getWelcomeMessageText();
-      persistMessages();
+    if (brandPanelBtn) {
+      brandPanelBtn.setAttribute("aria-label", localizedTitle);
     }
+    if (brandPanelCloseBtn) {
+      brandPanelCloseBtn.setAttribute("aria-label", t("aria_close_menu"));
+    }
+
+    normalizeSingleWelcomeMessage();
 
     renderMessages({ preserveScroll: true });
   }
 
   function setDrawer(open) {
+    if (open) {
+      setBrandPanel(false, { skipDrawerClose: true });
+    }
     drawer.classList.toggle("open", open);
-    overlay.classList.toggle("open", open);
     drawer.setAttribute("aria-hidden", open ? "false" : "true");
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    syncOverlay();
+  }
+
+  function syncOverlay() {
+    const shouldOpen =
+      drawer.classList.contains("open") || (brandPanel && brandPanel.classList.contains("open"));
+    overlay.classList.toggle("open", shouldOpen);
+  }
+
+  function setBrandPanel(open, options = {}) {
+    if (!brandPanel) {
+      return;
+    }
+    if (open && !options.skipDrawerClose) {
+      setDrawer(false);
+    }
+    brandPanel.classList.toggle("open", open);
+    brandPanel.setAttribute("aria-hidden", open ? "false" : "true");
+    if (brandPanelBtn) {
+      brandPanelBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    syncOverlay();
   }
 
   function nowIso() {
@@ -468,12 +512,63 @@
     messages.appendChild(row);
   }
 
+  function buildSpotlightFieldHtml(field, fieldClass, fieldLabel, requiredMark) {
+    const fieldName = String(field.name || "");
+    const currentValue = String(intakeState[fieldName] || "");
+    const options = Array.isArray(field.options) ? field.options : [];
+    const optionsHtml = options
+      .map((option) => {
+        const optionValue = String(option.value ?? "");
+        const optionLabel = getLocaleText(option.label, optionValue);
+        const optionEyebrow = getLocaleText(option.eyebrow, "");
+        const optionDescription = getLocaleText(option.description, "");
+        const selected = currentValue === optionValue;
+        return `
+          <button
+            type="button"
+            class="intake-spotlight ${selected ? "selected" : ""}"
+            data-intake-option="1"
+            data-field="${escapeHtml(fieldName)}"
+            data-type="single"
+            data-value="${escapeHtml(optionValue)}"
+            data-use-case="${escapeHtml(optionValue)}"
+            aria-pressed="${selected ? "true" : "false"}"
+          >
+            <span class="intake-spotlight__top">
+              <span class="intake-spotlight__eyebrow">${escapeHtml(optionEyebrow || optionLabel)}</span>
+              <span class="intake-spotlight__indicator" aria-hidden="true"></span>
+            </span>
+            <span class="intake-spotlight__title">${escapeHtml(optionLabel)}</span>
+            <span class="intake-spotlight__body">${escapeHtml(optionDescription)}</span>
+          </button>
+        `;
+      })
+      .join("");
+    return `
+      <div class="${fieldClass} intake-field--spotlight">
+        <div class="intake-spotlight-shell">
+          <div class="intake-spotlight__intro">
+            <div class="intake-spotlight__label">${escapeHtml(fieldLabel)} ${requiredMark}</div>
+          </div>
+          <div class="intake-spotlight-grid">
+            ${optionsHtml}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function buildIntakeFieldHtml(field) {
     const fieldName = String(field.name || "");
     const fieldLabel = getLocaleText(field.label, fieldName);
     const requiredMark = field.required ? '<span class="required-mark">*</span>' : "";
     const fullWidth = field.type === "text" || Boolean(field.full_width);
     const fieldClass = fullWidth ? "intake-field intake-field-full" : "intake-field";
+    const uiVariant = String(field.ui_variant || "").trim().toLowerCase();
+
+    if (field.type === "single" && uiVariant === "spotlight-grid") {
+      return buildSpotlightFieldHtml(field, fieldClass, fieldLabel, requiredMark);
+    }
 
     if (field.type === "text") {
       const value = intakeState[fieldName] || "";
@@ -495,6 +590,54 @@
     const options = Array.isArray(field.options) ? field.options : [];
     const currentValue = intakeState[fieldName];
     const selectedSet = new Set(Array.isArray(currentValue) ? currentValue : []);
+    const isDropdown = field.type === "single" && String(field.ui_variant || "").trim().toLowerCase() === "dropdown";
+
+    if (isDropdown) {
+      const selectedOption = options.find((option) => String(option.value ?? "") === String(currentValue || ""));
+      const selectedLabel = selectedOption ? getLocaleText(selectedOption.label, String(selectedOption.value ?? "")) : "";
+      const placeholder = getLocaleText(field.placeholder, fieldLabel);
+      const menuHtml = options
+        .map((option) => {
+          const optionValue = String(option.value ?? "");
+          const optionLabel = getLocaleText(option.label, optionValue);
+          const selected = String(currentValue || "") === optionValue;
+          return `
+            <button
+              type="button"
+              class="intake-dropdown__option ${selected ? "selected" : ""}"
+              data-intake-dropdown-option="1"
+              data-field="${escapeHtml(fieldName)}"
+              data-value="${escapeHtml(optionValue)}"
+            >
+              <span>${escapeHtml(optionLabel)}</span>
+              <span class="intake-dropdown__check">${selected ? "•" : ""}</span>
+            </button>
+          `;
+        })
+        .join("");
+
+      return `
+        <div class="${fieldClass} intake-field--dropdown">
+          <div class="intake-field-label">${escapeHtml(fieldLabel)} ${requiredMark}</div>
+          <div class="intake-dropdown ${openDropdownField === fieldName ? "open" : ""}" data-intake-dropdown-root="1">
+            <button
+              type="button"
+              class="intake-dropdown__trigger ${selectedLabel ? "has-value" : ""}"
+              data-intake-dropdown-trigger="1"
+              data-field="${escapeHtml(fieldName)}"
+              aria-expanded="${openDropdownField === fieldName ? "true" : "false"}"
+            >
+              <span class="intake-dropdown__trigger-text">${escapeHtml(selectedLabel || placeholder)}</span>
+              <span class="intake-dropdown__chevron">${openDropdownField === fieldName ? "−" : "+"}</span>
+            </button>
+            <div class="intake-dropdown__menu">
+              ${menuHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     const optionsHtml = options
       .map((option) => {
         const optionValue = String(option.value ?? "");
@@ -523,7 +666,6 @@
 
   function buildIntakeCardHtml() {
     const titleText = getLocaleText(INTAKE_CONFIG.title, t("intake_title"));
-    const descriptionText = getLocaleText(INTAKE_CONFIG.description, t("intake_description"));
     const submitLabel = intakeSubmitting ? t("intake_submitting") : getLocaleText(INTAKE_CONFIG.submit_button, t("intake_submit"));
     const resetLabel = getLocaleText(INTAKE_CONFIG.reset_button, t("intake_reset"));
     const useCaseField = getUseCaseField();
@@ -531,7 +673,7 @@
     const hasUseCase = Boolean(String(intakeState.use_case || "").trim());
     const canToggle = hasUseCase && supplementalFields.length > 0;
     const toggleLabel = intakeCollapsed ? t("intake_expand") : t("intake_collapse");
-    const descriptionHtml = intakeCollapsed ? "" : `<div class="intake-desc">${escapeHtml(descriptionText)}</div>`;
+    const descriptionHtml = "";
     const bodyStyle = intakeCollapsed || !hasUseCase ? "display:none;" : "";
     const primaryFieldHtml = useCaseField ? buildIntakeFieldHtml(useCaseField) : "";
     const fieldsHtml = supplementalFields.map((field) => buildIntakeFieldHtml(field)).join("");
@@ -555,13 +697,15 @@
         </div>
         ${toggleHtml}
       </div>
-      <div class="intake-primary">
-        ${primaryFieldHtml}
-      </div>
-      <div class="intake-body" style="${bodyStyle}">
-        ${fieldsHtml}
-        <div class="intake-error" id="intakeErrorText">${escapeHtml(intakeError)}</div>
-        ${actionsHtml}
+      <div class="intake-panel">
+        <div class="intake-primary">
+          ${primaryFieldHtml}
+        </div>
+        <div class="intake-body" style="${bodyStyle}">
+          ${fieldsHtml}
+          <div class="intake-error" id="intakeErrorText">${escapeHtml(intakeError)}</div>
+          ${actionsHtml}
+        </div>
       </div>
     `;
   }
@@ -577,6 +721,7 @@
         const optionValue = String(optionBtn.dataset.value || "");
         const selected = fieldType === "single" ? String(currentValue || "") === optionValue : selectedSet.has(optionValue);
         optionBtn.classList.toggle("selected", selected);
+        optionBtn.setAttribute("aria-pressed", selected ? "true" : "false");
       });
     }
 
@@ -608,10 +753,40 @@
       resetBtn.addEventListener("click", () => {
         intakeState = sanitizeIntakeState(createInitialIntakeState());
         intakeCollapsed = false;
+        openDropdownField = "";
         intakeError = "";
         renderMessages({ preserveScroll: true });
       });
     }
+
+    row.querySelectorAll("button[data-intake-dropdown-trigger='1']").forEach((button) => {
+      button.addEventListener("click", () => {
+        const field = String(button.dataset.field || "");
+        if (!field) {
+          return;
+        }
+        openDropdownField = openDropdownField === field ? "" : field;
+        renderMessages({ preserveScroll: true });
+      });
+    });
+
+    row.querySelectorAll("button[data-intake-dropdown-option='1']").forEach((button) => {
+      button.addEventListener("click", () => {
+        const field = String(button.dataset.field || "");
+        const value = String(button.dataset.value || "");
+        if (!field || !value) {
+          return;
+        }
+        intakeState[field] = value;
+        intakeState = sanitizeIntakeState(intakeState);
+        if (field === "use_case") {
+          intakeCollapsed = false;
+        }
+        openDropdownField = "";
+        clearIntakeErrorInView();
+        renderMessages({ preserveScroll: true });
+      });
+    });
 
     row.querySelectorAll("button[data-intake-option='1']").forEach((button) => {
       button.addEventListener("click", () => {
@@ -644,6 +819,7 @@
         if (field !== "use_case") {
           updateIntakeOptionButtons(field, fieldType);
         }
+        openDropdownField = "";
         clearIntakeErrorInView();
         renderMessages({ preserveScroll: true });
       });
@@ -760,6 +936,7 @@
         return;
       }
       sessionMessages = parsed;
+      normalizeSingleWelcomeMessage();
       renderMessages({ scrollToBottom: true });
     } catch (_err) {
       resetConversation();
@@ -995,7 +1172,47 @@
 
   menuBtn.addEventListener("click", () => setDrawer(true));
   drawerCloseBtn.addEventListener("click", () => setDrawer(false));
-  overlay.addEventListener("click", () => setDrawer(false));
+  if (brandPanelBtn) {
+    brandPanelBtn.addEventListener("click", () => {
+      const nextOpen = !brandPanel.classList.contains("open");
+      setBrandPanel(nextOpen);
+    });
+  }
+  if (brandPanelCloseBtn) {
+    brandPanelCloseBtn.addEventListener("click", () => setBrandPanel(false));
+  }
+  overlay.addEventListener("click", () => {
+    setDrawer(false);
+    setBrandPanel(false);
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!openDropdownField) {
+      return;
+    }
+    const target = event.target;
+    if (target && typeof target.closest === "function" && target.closest("[data-intake-dropdown-root='1']")) {
+      return;
+    }
+    openDropdownField = "";
+    renderMessages({ preserveScroll: true });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && openDropdownField) {
+      openDropdownField = "";
+      renderMessages({ preserveScroll: true });
+      return;
+    }
+    if (event.key === "Escape") {
+      if (drawer.classList.contains("open")) {
+        setDrawer(false);
+      }
+      if (brandPanel && brandPanel.classList.contains("open")) {
+        setBrandPanel(false);
+      }
+    }
+  });
 
   langToggleBtn.addEventListener("click", () => {
     currentLanguage = currentLanguage === "zh" ? "en" : "zh";
@@ -1011,6 +1228,7 @@
     intakeCollapsed = false;
     intakeSubmitting = false;
     intakeError = "";
+    openDropdownField = "";
     resetConversation();
     setDrawer(false);
     input.focus();
@@ -1026,6 +1244,7 @@
     intakeCollapsed = false;
     intakeSubmitting = false;
     intakeError = "";
+    openDropdownField = "";
     sessionMessages = [{ role: "assistant", text: getWelcomeMessageText(), timestamp: nowIso(), error: false }];
     persistMessages();
     renderMessages({ scrollToBottom: true });
@@ -1081,6 +1300,8 @@
   applyTheme(savedTheme);
   const showTs = localStorage.getItem(TIMESTAMP_KEY) === "1";
   setTimestampEnabled(showTs);
+  setDrawer(false);
+  setBrandPanel(false);
   applyLanguage();
   loadConversation();
   autoResizeTextarea(input);

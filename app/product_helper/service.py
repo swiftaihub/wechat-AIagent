@@ -300,6 +300,43 @@ def _render_ingredient_answer(language: str, ingredient_slug: str, links) -> str
     return f"{text}\n\n{caution}" + (f"\n\n{link_block}" if link_block else "")
 
 
+def _render_product_ingredient_answer(language: str, product_slug: str, bundle, links) -> str:
+    product = bundle.products_by_slug.get(product_slug)
+    if not product:
+        return (
+            "你先选一款具体产品，我就可以按这款茶把原料组成和整体方向拆给你看。"
+            if language == "zh"
+            else "Pick a specific product first and I can break down the ingredient composition for that tea."
+        )
+
+    ingredient_lines: list[str] = []
+    for ingredient_slug in product.ingredients:
+        ingredient = bundle.ingredients_by_slug.get(ingredient_slug)
+        if ingredient is None:
+            continue
+        name = _localized_name(ingredient.name["zh"], ingredient.name["en"], language)
+        summary = ingredient.summary["en"] if language == "en" else ingredient.summary["zh"]
+        ingredient_lines.append(f"- {name}: {summary}")
+
+    product_name = _localized_name(product.name["zh"], product.name["en"], language)
+    tagline = product.tagline["en"] if language == "en" else product.tagline["zh"]
+    if language == "en":
+        lines = [
+            f"If you want to understand the ingredient build of {product_name}, here is the cleanest breakdown:",
+            "\n".join(ingredient_lines) if ingredient_lines else "I can walk through the core ingredients of this blend once you pick the product.",
+            f"Overall, this tea leans more toward {tagline.lower()}.",
+        ]
+    else:
+        lines = [
+            f"如果你是想看 {product_name} 的原料组成，这款茶大致是这样配的：",
+            "\n".join(ingredient_lines) if ingredient_lines else "你先选定产品后，我就可以继续把这款茶的核心原料拆给你看。",
+            f"整体方向会更偏：{tagline}。",
+        ]
+
+    link_block = _render_links(language, links)
+    return "\n\n".join(lines + ([link_block] if link_block else []))
+
+
 def _bucket_products(bundle, desired_tags: tuple[str, ...], limit: int = 2) -> tuple:
     matches = []
     for product in bundle.products:
@@ -456,6 +493,45 @@ class ProductHelperService:
             mentioned_ingredients=route.mentioned_ingredients,
         )
         safety_notes = _caution_notes(text, language)
+        selected_product_slug = str(intake_state.get("selected_product_slug", "")).strip()
+
+        if intake_state.get("use_case") == "ingredient_learning" and selected_product_slug:
+            product_links = select_supporting_links(
+                bundle=bundle,
+                config=load_link_routing_config(),
+                language=language,
+                intent="product_recommendation_direct",
+                use_case="ingredient_learning",
+                product_recommendations=(),
+                mentioned_products=(selected_product_slug,),
+                mentioned_ingredients=(),
+            )
+            reply = _render_product_ingredient_answer(language, selected_product_slug, bundle, product_links)
+            self._sessions.upsert(
+                user_id,
+                language=language,
+                intake=intake_state,
+                current_intent="product_ingredient_breakdown",
+                current_use_case="ingredient_learning",
+                shortlisted_products=[selected_product_slug],
+                shortlisted_ingredients=[],
+                last_constitutions=[],
+                last_question=text,
+            )
+            return HelperResult(
+                language,
+                "product_ingredient_breakdown",
+                "ingredient_explainer",
+                _trim_reply(reply, channel),
+                False,
+                (),
+                intake_state,
+                None,
+                (),
+                product_links,
+                (),
+                {"route": route, "history_text": history_text},
+            )
 
         if route.intent == "compare_products":
             reply = _render_compare_answer(language, route, recommendations, links)

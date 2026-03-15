@@ -2,7 +2,7 @@ questionnaire:
   enabled: true
   auto_collapse_on_submit: true
   title:
-    zh: 基础信息快速采集
+    zh: 快速了解你的需求
     en: Quick intake
   description:
     zh: 把最近的状态、偏好或送礼方向交给 AI，它会更容易把推荐收得更准。
@@ -20,9 +20,14 @@ questionnaire:
     - name: use_case
       type: single
       required: true
+      full_width: true
+      ui_variant: spotlight-grid
       label:
         zh: 此次想解决什么
         en: What brings you here
+      helper_text:
+        zh: 先选一个最接近的方向，AI 会只展开与你这次目的相关的问题。
+        en: Choose the closest path and the helper will only open the questions that fit this visit.
       importance:
         default: 5
       options:
@@ -30,22 +35,52 @@ questionnaire:
           label:
             zh: 日常养护
             en: Daily wellness
+          eyebrow:
+            zh: Everyday ritual
+            en: Everyday ritual
+          description:
+            zh: 想找一款适合日常喝、节奏温和、容易长期坚持的草本茶。
+            en: Find a tea that feels gentle, steady, and easy to enjoy as part of your daily rhythm.
         - value: recent_discomfort_guidance
           label:
             zh: 最近状态与不适
             en: Recent discomfort guidance
+          eyebrow:
+            zh: Need-based
+            en: Need-based
+          description:
+            zh: 最近更明显地觉得累、燥、沉、紧，想更快缩小适合的产品方向。
+            en: Narrow the right direction faster when fatigue, dryness, heaviness, or tension feels more noticeable lately.
         - value: gifting
           label:
             zh: 送礼挑选
             en: Gifting
+          eyebrow:
+            zh: Gift-ready
+            en: Gift-ready
+          description:
+            zh: 想替家人、朋友或客户挑一款体面、接受度高、入口舒服的茶礼。
+            en: Choose something elegant, easy to enjoy, and polished enough to give with confidence.
         - value: ingredient_learning
           label:
             zh: 想了解原料
             en: Ingredient learning
+          eyebrow:
+            zh: Ingredient focus
+            en: Ingredient focus
+          description:
+            zh: 想先看看某款茶用了哪些原料，它们各自是什么风格与作用方向。
+            en: Explore what is inside a tea first and understand the role and character of its key ingredients.
         - value: article_recommendation
           label:
             zh: 想看文章内容
             en: Article recommendation
+          eyebrow:
+            zh: Learn first
+            en: Learn first
+          description:
+            zh: 想先通过内容了解调养思路、饮用场景或草本知识，再决定看哪款茶。
+            en: Start with reading and learn about rituals, ingredients, and wellness direction before choosing a tea.
     - name: recent_discomfort_multi
       type: multi
       required: false
@@ -74,6 +109,22 @@ questionnaire:
           label:
             zh: 郁闷、紧绷、想放松一点
             en: Mood tension and wanting to unwind
+    - name: selected_product_slug
+      type: single
+      required: true
+      label:
+        zh: 选择产品
+        en: Choose a product
+      placeholder:
+        zh: 请选择想了解原料的产品
+        en: Select the product whose ingredients you want to explore
+      ui_variant: dropdown
+      importance:
+        default: 5
+      show_if:
+        use_case: ingredient_learning
+      options_from:
+        source: product_catalog
     - name: free_text_recent_discomfort
       type: text
       required: false
@@ -86,5 +137,4 @@ questionnaire:
           - daily_wellness
           - recent_discomfort_guidance
           - gifting
-          - ingredient_learning
           - article_recommendation
