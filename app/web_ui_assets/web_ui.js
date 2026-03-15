@@ -3,8 +3,8 @@
   const CONFIG = boot.CONFIG || {
     title: { zh: "健康咨询助手", en: "Health Guidance Assistant" },
     welcomeMessage: {
-      zh: "欢迎使用健康咨询助手。请告诉我您的情况，我将提供实用的健康指导。",
-      en: "Welcome. Tell me your situation and I will provide practical wellness guidance.",
+      zh: "欢迎来到品牌 AI Helper。你可以告诉我最近的状态、送礼方向，或想先了解哪类草本茶。",
+      en: "Welcome to the brand AI helper. Share how you have been feeling, what you might want to gift, or the tea direction you want to explore.",
     },
     apiBaseUrl: "/ui/api/chat",
   };
@@ -67,7 +67,7 @@
       request_failed: "请求失败，请检查服务状态后重试。",
       empty_state_title: "从一个问题开始",
       empty_state_body: "可以描述你最近的体感、作息、想改善的饮茶体验，或你正在为谁寻找一款更合适的草本茶。",
-      intake_title: "基础信息快速采集",
+      intake_title: "快速了解你的需求",
       intake_description: "可快速点选并提交，系统会将信息结构化发送给 AI。",
       intake_submit: "提交",
       intake_submitting: "提交中...",
@@ -75,8 +75,8 @@
       intake_expand: "展开",
       intake_collapse: "收起",
       intake_required_missing: "请先完成必填项：{{fields}}",
-      intake_payload_prefix: "用户基础信息（constitution_scoring intake）：",
-      intake_submit_notice: "基础信息已提交，正在生成更贴近你的草本建议，请稍候。",
+      intake_payload_prefix: "用户基础信息（product_helper intake）：",
+      intake_submit_notice: "基础信息已提交，正在生成更贴近你的产品与内容推荐，请稍候。",
       aria_open_menu: "打开菜单",
       aria_close_menu: "关闭菜单",
     },
@@ -140,8 +140,8 @@
       intake_expand: "Expand",
       intake_collapse: "Collapse",
       intake_required_missing: "Please complete required fields: {{fields}}",
-      intake_payload_prefix: "User basic information (constitution_scoring intake):",
-      intake_submit_notice: "Information submitted. Generating a more tailored herbal guidance path now...",
+      intake_payload_prefix: "User basic information (product_helper intake):",
+      intake_submit_notice: "Information submitted. Generating a more tailored product and content recommendation path now...",
       aria_open_menu: "Open menu",
       aria_close_menu: "Close menu",
     },
@@ -153,23 +153,14 @@
   const THEME_KEY = "openclaw_ui_theme";
   const LANGUAGE_KEY = "openclaw_ui_language";
   const LANGUAGE_EXPLICIT_KEY = "openclaw_ui_language_explicit";
-  const PAYLOAD_FIELDS = [
-    "age",
-    "gender",
-    "sleep",
-    "diet",
-    "bowel",
-    "emotion",
-    "exercise",
-    "recent_discomfort",
-    "recent_discomfort_choice",
-    "recent_discomfort_text",
-  ];
-
   const menuBtn = document.getElementById("menuBtn");
   const drawerCloseBtn = document.getElementById("drawerCloseBtn");
   const langToggleBtn = document.getElementById("langToggleBtn");
   const drawer = document.getElementById("drawer");
+  const brandPanel = document.getElementById("brandPanel");
+  const brandPanelBtn = document.getElementById("brandPanelBtn");
+  const brandPanelCloseBtn = document.getElementById("brandPanelCloseBtn");
+  const brandTriggerTitle = document.getElementById("brandTriggerTitle");
   const overlay = document.getElementById("overlay");
   const newChatBtn = document.getElementById("newChatBtn");
   const newChatInlineBtn = document.getElementById("newChatInlineBtn");
@@ -209,14 +200,28 @@
     node.textContent = CONFIG.apiBaseUrl;
   });
 
+  function createNewUserId() {
+    return "web-" + Math.random().toString(16).slice(2, 12);
+  }
+
+  function syncUserIdLabels() {
+    userIdLabels.forEach((node) => {
+      node.textContent = userId;
+    });
+  }
+
+  function setUserId(nextUserId) {
+    userId = String(nextUserId || "").trim() || createNewUserId();
+    localStorage.setItem(USER_KEY, userId);
+    syncUserIdLabels();
+  }
+
   let userId = localStorage.getItem(USER_KEY);
   if (!userId) {
-    userId = "web-" + Math.random().toString(16).slice(2, 12);
+    userId = createNewUserId();
     localStorage.setItem(USER_KEY, userId);
   }
-  userIdLabels.forEach((node) => {
-    node.textContent = userId;
-  });
+  syncUserIdLabels();
 
   function getIntakeFields() {
     if (!INTAKE_CONFIG || !Array.isArray(INTAKE_CONFIG.fields)) {
@@ -227,6 +232,84 @@
 
   function hasIntakeField(fieldName) {
     return getIntakeFields().some((field) => String((field && field.name) || "") === fieldName);
+  }
+
+  function normalizeMatchValues(value) {
+    if (Array.isArray(value)) {
+      return value.map((item) => String(item || "").trim()).filter(Boolean);
+    }
+    const text = String(value || "").trim();
+    return text ? [text] : [];
+  }
+
+  function intakeFieldIsVisible(field, state = intakeState) {
+    const fieldName = String((field && field.name) || "");
+    if (!fieldName) {
+      return false;
+    }
+    if (fieldName === "use_case") {
+      return true;
+    }
+
+    const showIf = field && typeof field.show_if === "object" ? field.show_if : null;
+    if (!showIf || Array.isArray(showIf) || Object.keys(showIf).length === 0) {
+      return Boolean(String((state && state.use_case) || "").trim());
+    }
+
+    return Object.entries(showIf).every(([dependencyName, expectedValue]) => {
+      const expectedValues = new Set(normalizeMatchValues(expectedValue));
+      const currentValues = new Set(normalizeMatchValues(state ? state[dependencyName] : ""));
+      if (expectedValues.size === 0 || currentValues.size === 0) {
+        return false;
+      }
+      for (const currentValue of currentValues) {
+        if (expectedValues.has(currentValue)) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }
+
+  function getUseCaseField() {
+    return getIntakeFields().find((field) => String((field && field.name) || "") === "use_case") || null;
+  }
+
+  function getVisibleIntakeFields(state = intakeState) {
+    return getIntakeFields().filter((field) => intakeFieldIsVisible(field, state));
+  }
+
+  function getSupplementalIntakeFields(state = intakeState) {
+    return getVisibleIntakeFields(state).filter((field) => String((field && field.name) || "") !== "use_case");
+  }
+
+  function sanitizeIntakeState(nextState) {
+    const sanitized = createInitialIntakeState();
+    const source = nextState && typeof nextState === "object" ? nextState : {};
+
+    for (const field of getIntakeFields()) {
+      const fieldName = String((field && field.name) || "");
+      if (!fieldName) {
+        continue;
+      }
+      const incomingValue = source[fieldName];
+      if (field.type === "multi") {
+        sanitized[fieldName] = Array.isArray(incomingValue)
+          ? incomingValue.map((item) => String(item || "").trim()).filter(Boolean)
+          : [];
+      } else {
+        sanitized[fieldName] = typeof incomingValue === "string" ? incomingValue : String(incomingValue || "").trim();
+      }
+    }
+
+    for (const field of getIntakeFields()) {
+      const fieldName = String((field && field.name) || "");
+      if (!fieldName || intakeFieldIsVisible(field, sanitized)) {
+        continue;
+      }
+      sanitized[fieldName] = field.type === "multi" ? [] : "";
+    }
+    return sanitized;
   }
 
   function createInitialIntakeState() {
@@ -241,10 +324,11 @@
     return state;
   }
 
-  let intakeState = createInitialIntakeState();
+  let intakeState = sanitizeIntakeState(createInitialIntakeState());
   let intakeCollapsed = false;
   let intakeSubmitting = false;
   let intakeError = "";
+  let openDropdownField = "";
 
   function t(key) {
     const dict = I18N[currentLanguage] || I18N.zh;
@@ -276,6 +360,19 @@
 
   function getWelcomeMessageText() {
     return getLocaleText(CONFIG.welcomeMessage, "");
+  }
+
+  function normalizeSingleWelcomeMessage() {
+    if (sessionMessages.length !== 1 || !sessionMessages[0] || sessionMessages[0].role !== "assistant") {
+      return false;
+    }
+    const nextWelcome = getWelcomeMessageText();
+    if (String(sessionMessages[0].text || "") === nextWelcome) {
+      return false;
+    }
+    sessionMessages[0].text = nextWelcome;
+    persistMessages();
+    return true;
   }
 
   function formatText(template, values) {
@@ -317,6 +414,9 @@
     document.documentElement.lang = currentLanguage === "zh" ? "zh-CN" : "en";
     const localizedTitle = getLocaleText(CONFIG.title, document.title);
     uiTitle.textContent = localizedTitle;
+    if (brandTriggerTitle) {
+      brandTriggerTitle.textContent = localizedTitle;
+    }
     heroLead.textContent = getWelcomeMessageText();
     heroStripText.textContent = t("hero_strip_text");
     document.title = localizedTitle;
@@ -342,24 +442,47 @@
     statusPill.textContent = resolveStatusText(statusState);
     menuBtn.setAttribute("aria-label", t("aria_open_menu"));
     drawerCloseBtn.setAttribute("aria-label", t("aria_close_menu"));
-
-    if (
-      sessionMessages.length === 1 &&
-      sessionMessages[0] &&
-      sessionMessages[0].role === "assistant" &&
-      getLocaleVariants(CONFIG.welcomeMessage).includes(String(sessionMessages[0].text || "").trim())
-    ) {
-      sessionMessages[0].text = getWelcomeMessageText();
-      persistMessages();
+    if (brandPanelBtn) {
+      brandPanelBtn.setAttribute("aria-label", localizedTitle);
+    }
+    if (brandPanelCloseBtn) {
+      brandPanelCloseBtn.setAttribute("aria-label", t("aria_close_menu"));
     }
 
-    renderMessages();
+    normalizeSingleWelcomeMessage();
+
+    renderMessages({ preserveScroll: true });
   }
 
   function setDrawer(open) {
+    if (open) {
+      setBrandPanel(false, { skipDrawerClose: true });
+    }
     drawer.classList.toggle("open", open);
-    overlay.classList.toggle("open", open);
     drawer.setAttribute("aria-hidden", open ? "false" : "true");
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    syncOverlay();
+  }
+
+  function syncOverlay() {
+    const shouldOpen =
+      drawer.classList.contains("open") || (brandPanel && brandPanel.classList.contains("open"));
+    overlay.classList.toggle("open", shouldOpen);
+  }
+
+  function setBrandPanel(open, options = {}) {
+    if (!brandPanel) {
+      return;
+    }
+    if (open && !options.skipDrawerClose) {
+      setDrawer(false);
+    }
+    brandPanel.classList.toggle("open", open);
+    brandPanel.setAttribute("aria-hidden", open ? "false" : "true");
+    if (brandPanelBtn) {
+      brandPanelBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    syncOverlay();
   }
 
   function nowIso() {
@@ -389,12 +512,63 @@
     messages.appendChild(row);
   }
 
+  function buildSpotlightFieldHtml(field, fieldClass, fieldLabel, requiredMark) {
+    const fieldName = String(field.name || "");
+    const currentValue = String(intakeState[fieldName] || "");
+    const options = Array.isArray(field.options) ? field.options : [];
+    const optionsHtml = options
+      .map((option) => {
+        const optionValue = String(option.value ?? "");
+        const optionLabel = getLocaleText(option.label, optionValue);
+        const optionEyebrow = getLocaleText(option.eyebrow, "");
+        const optionDescription = getLocaleText(option.description, "");
+        const selected = currentValue === optionValue;
+        return `
+          <button
+            type="button"
+            class="intake-spotlight ${selected ? "selected" : ""}"
+            data-intake-option="1"
+            data-field="${escapeHtml(fieldName)}"
+            data-type="single"
+            data-value="${escapeHtml(optionValue)}"
+            data-use-case="${escapeHtml(optionValue)}"
+            aria-pressed="${selected ? "true" : "false"}"
+          >
+            <span class="intake-spotlight__top">
+              <span class="intake-spotlight__eyebrow">${escapeHtml(optionEyebrow || optionLabel)}</span>
+              <span class="intake-spotlight__indicator" aria-hidden="true"></span>
+            </span>
+            <span class="intake-spotlight__title">${escapeHtml(optionLabel)}</span>
+            <span class="intake-spotlight__body">${escapeHtml(optionDescription)}</span>
+          </button>
+        `;
+      })
+      .join("");
+    return `
+      <div class="${fieldClass} intake-field--spotlight">
+        <div class="intake-spotlight-shell">
+          <div class="intake-spotlight__intro">
+            <div class="intake-spotlight__label">${escapeHtml(fieldLabel)} ${requiredMark}</div>
+          </div>
+          <div class="intake-spotlight-grid">
+            ${optionsHtml}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function buildIntakeFieldHtml(field) {
     const fieldName = String(field.name || "");
     const fieldLabel = getLocaleText(field.label, fieldName);
     const requiredMark = field.required ? '<span class="required-mark">*</span>' : "";
     const fullWidth = field.type === "text" || Boolean(field.full_width);
     const fieldClass = fullWidth ? "intake-field intake-field-full" : "intake-field";
+    const uiVariant = String(field.ui_variant || "").trim().toLowerCase();
+
+    if (field.type === "single" && uiVariant === "spotlight-grid") {
+      return buildSpotlightFieldHtml(field, fieldClass, fieldLabel, requiredMark);
+    }
 
     if (field.type === "text") {
       const value = intakeState[fieldName] || "";
@@ -416,6 +590,54 @@
     const options = Array.isArray(field.options) ? field.options : [];
     const currentValue = intakeState[fieldName];
     const selectedSet = new Set(Array.isArray(currentValue) ? currentValue : []);
+    const isDropdown = field.type === "single" && String(field.ui_variant || "").trim().toLowerCase() === "dropdown";
+
+    if (isDropdown) {
+      const selectedOption = options.find((option) => String(option.value ?? "") === String(currentValue || ""));
+      const selectedLabel = selectedOption ? getLocaleText(selectedOption.label, String(selectedOption.value ?? "")) : "";
+      const placeholder = getLocaleText(field.placeholder, fieldLabel);
+      const menuHtml = options
+        .map((option) => {
+          const optionValue = String(option.value ?? "");
+          const optionLabel = getLocaleText(option.label, optionValue);
+          const selected = String(currentValue || "") === optionValue;
+          return `
+            <button
+              type="button"
+              class="intake-dropdown__option ${selected ? "selected" : ""}"
+              data-intake-dropdown-option="1"
+              data-field="${escapeHtml(fieldName)}"
+              data-value="${escapeHtml(optionValue)}"
+            >
+              <span>${escapeHtml(optionLabel)}</span>
+              <span class="intake-dropdown__check">${selected ? "•" : ""}</span>
+            </button>
+          `;
+        })
+        .join("");
+
+      return `
+        <div class="${fieldClass} intake-field--dropdown">
+          <div class="intake-field-label">${escapeHtml(fieldLabel)} ${requiredMark}</div>
+          <div class="intake-dropdown ${openDropdownField === fieldName ? "open" : ""}" data-intake-dropdown-root="1">
+            <button
+              type="button"
+              class="intake-dropdown__trigger ${selectedLabel ? "has-value" : ""}"
+              data-intake-dropdown-trigger="1"
+              data-field="${escapeHtml(fieldName)}"
+              aria-expanded="${openDropdownField === fieldName ? "true" : "false"}"
+            >
+              <span class="intake-dropdown__trigger-text">${escapeHtml(selectedLabel || placeholder)}</span>
+              <span class="intake-dropdown__chevron">${openDropdownField === fieldName ? "−" : "+"}</span>
+            </button>
+            <div class="intake-dropdown__menu">
+              ${menuHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     const optionsHtml = options
       .map((option) => {
         const optionValue = String(option.value ?? "");
@@ -444,30 +666,45 @@
 
   function buildIntakeCardHtml() {
     const titleText = getLocaleText(INTAKE_CONFIG.title, t("intake_title"));
-    const descriptionText = getLocaleText(INTAKE_CONFIG.description, t("intake_description"));
     const submitLabel = intakeSubmitting ? t("intake_submitting") : getLocaleText(INTAKE_CONFIG.submit_button, t("intake_submit"));
     const resetLabel = getLocaleText(INTAKE_CONFIG.reset_button, t("intake_reset"));
+    const useCaseField = getUseCaseField();
+    const supplementalFields = getSupplementalIntakeFields();
+    const hasUseCase = Boolean(String(intakeState.use_case || "").trim());
+    const canToggle = hasUseCase && supplementalFields.length > 0;
     const toggleLabel = intakeCollapsed ? t("intake_expand") : t("intake_collapse");
-    const bodyStyle = intakeCollapsed ? "display:none;" : "";
-
-    const fieldsHtml = getIntakeFields()
-      .map((field) => buildIntakeFieldHtml(field))
-      .join("");
+    const descriptionHtml = "";
+    const bodyStyle = intakeCollapsed || !hasUseCase ? "display:none;" : "";
+    const primaryFieldHtml = useCaseField ? buildIntakeFieldHtml(useCaseField) : "";
+    const fieldsHtml = supplementalFields.map((field) => buildIntakeFieldHtml(field)).join("");
+    const toggleHtml = canToggle
+      ? `<button type="button" class="intake-toggle" id="intakeToggleBtn">${escapeHtml(toggleLabel)}</button>`
+      : "";
+    const actionsHtml = hasUseCase
+      ? `
+        <div class="intake-actions">
+          <button type="button" class="intake-submit" id="intakeSubmitBtn" ${isSending || intakeSubmitting ? "disabled" : ""}>${escapeHtml(submitLabel)}</button>
+          <button type="button" class="intake-reset" id="intakeResetBtn" ${isSending || intakeSubmitting ? "disabled" : ""}>${escapeHtml(resetLabel)}</button>
+        </div>
+      `
+      : "";
 
     return `
       <div class="intake-header">
         <div>
           <div class="intake-title">${escapeHtml(titleText)}</div>
-          <div class="intake-desc">${escapeHtml(descriptionText)}</div>
+          ${descriptionHtml}
         </div>
-        <button type="button" class="intake-toggle" id="intakeToggleBtn">${escapeHtml(toggleLabel)}</button>
+        ${toggleHtml}
       </div>
-      <div class="intake-body" style="${bodyStyle}">
-        ${fieldsHtml}
-        <div class="intake-error" id="intakeErrorText">${escapeHtml(intakeError)}</div>
-        <div class="intake-actions">
-          <button type="button" class="intake-submit" id="intakeSubmitBtn" ${isSending || intakeSubmitting ? "disabled" : ""}>${escapeHtml(submitLabel)}</button>
-          <button type="button" class="intake-reset" id="intakeResetBtn" ${isSending || intakeSubmitting ? "disabled" : ""}>${escapeHtml(resetLabel)}</button>
+      <div class="intake-panel">
+        <div class="intake-primary">
+          ${primaryFieldHtml}
+        </div>
+        <div class="intake-body" style="${bodyStyle}">
+          ${fieldsHtml}
+          <div class="intake-error" id="intakeErrorText">${escapeHtml(intakeError)}</div>
+          ${actionsHtml}
         </div>
       </div>
     `;
@@ -484,6 +721,7 @@
         const optionValue = String(optionBtn.dataset.value || "");
         const selected = fieldType === "single" ? String(currentValue || "") === optionValue : selectedSet.has(optionValue);
         optionBtn.classList.toggle("selected", selected);
+        optionBtn.setAttribute("aria-pressed", selected ? "true" : "false");
       });
     }
 
@@ -499,7 +737,7 @@
     if (toggleBtn) {
       toggleBtn.addEventListener("click", () => {
         intakeCollapsed = !intakeCollapsed;
-        renderMessages();
+        renderMessages({ preserveScroll: true });
       });
     }
 
@@ -513,11 +751,42 @@
     const resetBtn = row.querySelector("#intakeResetBtn");
     if (resetBtn) {
       resetBtn.addEventListener("click", () => {
-        intakeState = createInitialIntakeState();
+        intakeState = sanitizeIntakeState(createInitialIntakeState());
+        intakeCollapsed = false;
+        openDropdownField = "";
         intakeError = "";
-        renderMessages();
+        renderMessages({ preserveScroll: true });
       });
     }
+
+    row.querySelectorAll("button[data-intake-dropdown-trigger='1']").forEach((button) => {
+      button.addEventListener("click", () => {
+        const field = String(button.dataset.field || "");
+        if (!field) {
+          return;
+        }
+        openDropdownField = openDropdownField === field ? "" : field;
+        renderMessages({ preserveScroll: true });
+      });
+    });
+
+    row.querySelectorAll("button[data-intake-dropdown-option='1']").forEach((button) => {
+      button.addEventListener("click", () => {
+        const field = String(button.dataset.field || "");
+        const value = String(button.dataset.value || "");
+        if (!field || !value) {
+          return;
+        }
+        intakeState[field] = value;
+        intakeState = sanitizeIntakeState(intakeState);
+        if (field === "use_case") {
+          intakeCollapsed = false;
+        }
+        openDropdownField = "";
+        clearIntakeErrorInView();
+        renderMessages({ preserveScroll: true });
+      });
+    });
 
     row.querySelectorAll("button[data-intake-option='1']").forEach((button) => {
       button.addEventListener("click", () => {
@@ -529,7 +798,12 @@
         }
 
         if (fieldType === "single") {
-          intakeState[field] = String(intakeState[field] || "") === value ? "" : value;
+          if (field === "use_case") {
+            intakeState[field] = value;
+            intakeCollapsed = false;
+          } else {
+            intakeState[field] = String(intakeState[field] || "") === value ? "" : value;
+          }
         } else if (fieldType === "multi") {
           const selected = Array.isArray(intakeState[field]) ? [...intakeState[field]] : [];
           const index = selected.indexOf(value);
@@ -541,8 +815,13 @@
           intakeState[field] = selected;
         }
 
-        updateIntakeOptionButtons(field, fieldType);
+        intakeState = sanitizeIntakeState(intakeState);
+        if (field !== "use_case") {
+          updateIntakeOptionButtons(field, fieldType);
+        }
+        openDropdownField = "";
         clearIntakeErrorInView();
+        renderMessages({ preserveScroll: true });
       });
     });
 
@@ -554,6 +833,7 @@
           return;
         }
         intakeState[field] = textarea.value;
+        intakeState = sanitizeIntakeState(intakeState);
         autoResizeTextarea(textarea);
       });
     });
@@ -570,11 +850,11 @@
     }
 
     const intakeRow = document.createElement("div");
-    intakeRow.className = "row assistant intake-card-row";
+    intakeRow.className = `row assistant intake-card-row${intakeCollapsed ? " is-collapsed" : ""}`;
     intakeRow.id = "intakeCardRow";
 
     const intakeBubble = document.createElement("div");
-    intakeBubble.className = "bubble intake-card";
+    intakeBubble.className = `bubble intake-card${intakeCollapsed ? " is-collapsed" : ""}`;
     intakeBubble.innerHTML = buildIntakeCardHtml();
     intakeRow.appendChild(intakeBubble);
 
@@ -588,7 +868,10 @@
     bindIntakeEvents(intakeRow);
   }
 
-  function renderMessages() {
+  function renderMessages(options = {}) {
+    const preserveScroll = Boolean(options.preserveScroll);
+    const scrollToBottom = Boolean(options.scrollToBottom);
+    const previousScrollTop = messages.scrollTop;
     messages.innerHTML = "";
 
     if (sessionMessages.length === 0) {
@@ -613,7 +896,13 @@
     }
 
     renderIntakeCard();
-    messages.scrollTop = messages.scrollHeight;
+    if (scrollToBottom) {
+      messages.scrollTop = messages.scrollHeight;
+      return;
+    }
+    if (preserveScroll) {
+      messages.scrollTop = Math.min(previousScrollTop, Math.max(0, messages.scrollHeight - messages.clientHeight));
+    }
   }
 
   function addMessage(role, text, options = {}) {
@@ -624,13 +913,13 @@
       error: Boolean(options.error),
     });
     persistMessages();
-    renderMessages();
+    renderMessages({ scrollToBottom: true });
   }
 
   function resetConversation() {
     sessionMessages = [{ role: "assistant", text: getWelcomeMessageText(), timestamp: nowIso(), error: false }];
     persistMessages();
-    renderMessages();
+    renderMessages({ scrollToBottom: true });
     setStatusByKey("status_ready");
   }
 
@@ -647,7 +936,8 @@
         return;
       }
       sessionMessages = parsed;
-      renderMessages();
+      normalizeSingleWelcomeMessage();
+      renderMessages({ scrollToBottom: true });
     } catch (_err) {
       resetConversation();
     }
@@ -696,12 +986,17 @@
   }
 
   function validateIntakePayload() {
-    const requiredSingles = getIntakeFields().filter((field) => field.type === "single" && field.required);
+    const requiredFields = getVisibleIntakeFields().filter((field) => field.required);
     const missingLabels = [];
 
-    for (const field of requiredSingles) {
-      const value = String(intakeState[field.name] || "").trim();
-      if (!value) {
+    for (const field of requiredFields) {
+      const value = intakeState[field.name];
+      const isMissing =
+        value === null ||
+        value === undefined ||
+        (Array.isArray(value) && value.length === 0) ||
+        (!Array.isArray(value) && String(value || "").trim() === "");
+      if (isMissing) {
         missingLabels.push(getLocaleText(field.label, field.name));
       }
     }
@@ -719,43 +1014,42 @@
   }
 
   function buildIntakePayload() {
-    const payload = {
-      age: "",
-      gender: "",
-      sleep: [],
-      diet: [],
-      bowel: [],
-      emotion: [],
-      exercise: "",
-      recent_discomfort: "",
-      recent_discomfort_choice: "",
-      recent_discomfort_text: "",
-    };
-
-    for (const key of PAYLOAD_FIELDS) {
+    const payload = {};
+    for (const field of getVisibleIntakeFields()) {
+      const key = field.name;
       const value = intakeState[key];
       if (Array.isArray(value)) {
-        payload[key] = value;
+        const items = value.filter((item) => String(item || "").trim());
+        if (items.length > 0) {
+          payload[key] = items;
+        }
       } else if (typeof value === "string") {
-        payload[key] = value.trim();
+        const trimmed = value.trim();
+        if (trimmed) {
+          payload[key] = trimmed;
+        }
       }
     }
 
     const recentDiscomfortParts = [];
-    for (const key of ["recent_discomfort", "recent_discomfort_choice", "recent_discomfort_text"]) {
-      const value = String(payload[key] || "").trim();
-      if (!value || recentDiscomfortParts.includes(value)) {
-        continue;
+    for (const key of ["recent_discomfort_multi", "free_text_recent_discomfort"]) {
+      const value = payload[key];
+      if (Array.isArray(value)) {
+        value.forEach((item) => {
+          const trimmed = String(item || "").trim();
+          if (trimmed && !recentDiscomfortParts.includes(trimmed)) {
+            recentDiscomfortParts.push(trimmed);
+          }
+        });
+      } else {
+        const trimmed = String(value || "").trim();
+        if (trimmed && !recentDiscomfortParts.includes(trimmed)) {
+          recentDiscomfortParts.push(trimmed);
+        }
       }
-      recentDiscomfortParts.push(value);
     }
-    payload.recent_discomfort = recentDiscomfortParts.join("\n");
-
-    if (!hasIntakeField("recent_discomfort_choice") && !payload.recent_discomfort_choice) {
-      delete payload.recent_discomfort_choice;
-    }
-    if (!hasIntakeField("recent_discomfort_text") && !payload.recent_discomfort_text) {
-      delete payload.recent_discomfort_text;
+    if (recentDiscomfortParts.length > 0) {
+      payload.recent_discomfort_combined = recentDiscomfortParts;
     }
 
     return payload;
@@ -776,7 +1070,7 @@
     sendBtn.disabled = true;
     if (fromIntake) {
       intakeSubmitting = true;
-      renderMessages();
+      renderMessages({ preserveScroll: true });
     }
 
     addMessage("user", displayText);
@@ -790,7 +1084,7 @@
       error: false,
     });
     persistMessages();
-    renderMessages();
+    renderMessages({ scrollToBottom: true });
 
     try {
       const resp = await fetch(CONFIG.apiBaseUrl, {
@@ -822,7 +1116,7 @@
         error: Boolean(data.timed_out),
       };
       persistMessages();
-      renderMessages();
+      renderMessages({ scrollToBottom: true });
 
       const elapsed = Number(data.elapsed_ms || 0);
       if (data.timed_out) {
@@ -839,7 +1133,7 @@
         error: true,
       };
       persistMessages();
-      renderMessages();
+      renderMessages({ scrollToBottom: true });
       setStatusByKey("status_failed");
     } finally {
       isSending = false;
@@ -849,7 +1143,7 @@
         if (success && INTAKE_CONFIG.auto_collapse_on_submit) {
           intakeCollapsed = true;
         }
-        renderMessages();
+        renderMessages({ preserveScroll: true });
       }
     }
 
@@ -862,7 +1156,7 @@
     }
 
     if (!validateIntakePayload()) {
-      renderMessages();
+      renderMessages({ preserveScroll: true });
       return;
     }
 
@@ -878,7 +1172,47 @@
 
   menuBtn.addEventListener("click", () => setDrawer(true));
   drawerCloseBtn.addEventListener("click", () => setDrawer(false));
-  overlay.addEventListener("click", () => setDrawer(false));
+  if (brandPanelBtn) {
+    brandPanelBtn.addEventListener("click", () => {
+      const nextOpen = !brandPanel.classList.contains("open");
+      setBrandPanel(nextOpen);
+    });
+  }
+  if (brandPanelCloseBtn) {
+    brandPanelCloseBtn.addEventListener("click", () => setBrandPanel(false));
+  }
+  overlay.addEventListener("click", () => {
+    setDrawer(false);
+    setBrandPanel(false);
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!openDropdownField) {
+      return;
+    }
+    const target = event.target;
+    if (target && typeof target.closest === "function" && target.closest("[data-intake-dropdown-root='1']")) {
+      return;
+    }
+    openDropdownField = "";
+    renderMessages({ preserveScroll: true });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && openDropdownField) {
+      openDropdownField = "";
+      renderMessages({ preserveScroll: true });
+      return;
+    }
+    if (event.key === "Escape") {
+      if (drawer.classList.contains("open")) {
+        setDrawer(false);
+      }
+      if (brandPanel && brandPanel.classList.contains("open")) {
+        setBrandPanel(false);
+      }
+    }
+  });
 
   langToggleBtn.addEventListener("click", () => {
     currentLanguage = currentLanguage === "zh" ? "en" : "zh";
@@ -889,6 +1223,12 @@
   });
 
   function startNewChat() {
+    setUserId(createNewUserId());
+    intakeState = sanitizeIntakeState(createInitialIntakeState());
+    intakeCollapsed = false;
+    intakeSubmitting = false;
+    intakeError = "";
+    openDropdownField = "";
     resetConversation();
     setDrawer(false);
     input.focus();
@@ -899,9 +1239,15 @@
   heroResetBtn.addEventListener("click", startNewChat);
 
   clearChatBtn.addEventListener("click", () => {
-    sessionMessages = [];
+    setUserId(createNewUserId());
+    intakeState = sanitizeIntakeState(createInitialIntakeState());
+    intakeCollapsed = false;
+    intakeSubmitting = false;
+    intakeError = "";
+    openDropdownField = "";
+    sessionMessages = [{ role: "assistant", text: getWelcomeMessageText(), timestamp: nowIso(), error: false }];
     persistMessages();
-    renderMessages();
+    renderMessages({ scrollToBottom: true });
     setStatusByKey("status_cleared");
     setDrawer(false);
   });
@@ -954,6 +1300,8 @@
   applyTheme(savedTheme);
   const showTs = localStorage.getItem(TIMESTAMP_KEY) === "1";
   setTimestampEnabled(showTs);
+  setDrawer(false);
+  setBrandPanel(false);
   applyLanguage();
   loadConversation();
   autoResizeTextarea(input);

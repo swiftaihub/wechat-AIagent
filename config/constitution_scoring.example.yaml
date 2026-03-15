@@ -1,0 +1,43 @@
+schema:
+  version: 2
+  constitutions: [qi_deficiency, yang_deficiency, yin_deficiency, phlegm_dampness, damp_heat, qi_stagnation, blood_stasis, qi_blood_deficiency]
+
+constitutions:
+  qi_deficiency:
+    label:
+      zh: 气虚
+      en: Qi deficiency
+    description:
+      zh: 更常见于累、恢复慢、容易被消耗的状态。
+      en: More often associated with low energy and slower recovery.
+    positive_indicators: [易疲劳, 恢复慢, low energy]
+    negative_indicators: [口苦偏热]
+    confidence_thresholds:
+      medium: 4
+      high: 7
+    explanation_template:
+      zh: 你的整体信号更偏向气虚方向。
+      en: Your overall pattern leans more toward qi deficiency.
+
+signals:
+  recent_discomfort_multi:
+    fatigue:
+      scores:
+        qi_deficiency: 3
+      evidence:
+        zh: 最近偏累
+        en: Recent fatigue
+
+free_text_signals:
+  - patterns: ["fatigue", "最近很累", "恢复慢"]
+    evidence:
+      zh: 自由描述偏向疲劳
+      en: Free-text fatigue
+    scores:
+      qi_deficiency: 2
+
+purchase_signals: {}
+
+output_policy:
+  top_k: 3
+  minimum_score: 2.5

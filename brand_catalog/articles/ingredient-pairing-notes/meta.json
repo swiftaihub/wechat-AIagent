@@ -1,0 +1,25 @@
+{
+  "slug": "ingredient-pairing-notes",
+  "title": {
+    "en": "Ingredient Pairing Notes for Balanced Blends",
+    "zh": "更平衡茶饮中的原料搭配笔记"
+  },
+  "excerpt": {
+    "en": "Placeholder editorial content on pairing citrus, florals, roots, and fruits into tea blends with structure and elegance.",
+    "zh": "占位编辑内容，讨论如何将柑橘、花香、根茎与果材搭配成层次更完整的茶饮。"
+  },
+  "category": {
+    "en": "Ingredient guide",
+    "zh": "原料指南"
+  },
+  "tags": {
+    "en": ["Pairings", "Flavor", "Placeholder"],
+    "zh": ["搭配", "风味", "占位内容"]
+  },
+  "coverImage": "/images/articles/ingredients-guide.jpg",
+  "featured": true,
+  "publishedAt": "2026-03-12",
+  "readingTheme": "serif",
+  "relatedProducts": ["citrus-cloud-harmony-tea", "citrus-rose-ease-tea", "amber-orchard-digest-tea"],
+  "relatedIngredients": ["chenpi", "rose", "fo-shou", "poria"]
+}

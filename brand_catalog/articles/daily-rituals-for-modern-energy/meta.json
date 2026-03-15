@@ -1,0 +1,25 @@
+{
+  "slug": "daily-rituals-for-modern-energy",
+  "title": {
+    "en": "Daily Rituals for Modern Energy",
+    "zh": "现代节奏中的日常元气仪式"
+  },
+  "excerpt": {
+    "en": "Placeholder editorial content exploring how gentle tea rituals can support more intentional mornings and steadier afternoons.",
+    "zh": "占位编辑内容，讨论如何通过温和的茶饮仪式让早晨更有节奏、午后更平稳。"
+  },
+  "category": {
+    "en": "Daily wellness",
+    "zh": "日常养护"
+  },
+  "tags": {
+    "en": ["Morning rhythm", "Energy", "Placeholder"],
+    "zh": ["晨间节奏", "元气", "占位内容"]
+  },
+  "coverImage": "/images/articles/daily-wellness.jpg",
+  "featured": true,
+  "publishedAt": "2026-03-14",
+  "readingTheme": "serif",
+  "relatedProducts": ["zaoxi-vitality-tea", "amber-silk-restore-tea"],
+  "relatedIngredients": ["astragalus", "red-date", "goji"]
+}

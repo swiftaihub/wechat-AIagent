@@ -10,9 +10,10 @@ load_dotenv()
 from app.wechat import router as wechat_router
 from app.web_ui import router as web_ui_router
 from app.ollama_client import warmup_ollama
+from app.product_helper.content import load_catalog_bundle
 from app.prompt_runtime import get_prompt_runtime
 
-app = FastAPI(title="Ollama WeChat MP Gateway")
+app = FastAPI(title="Herbal Wellness Tea Product Helper")
 logger = logging.getLogger(__name__)
 
 cors_origins_raw = os.getenv("WEBUI_CORS_ALLOWED_ORIGINS", "").strip()
@@ -48,7 +49,14 @@ logger.info("Web UI mounted at base path: %s", webui_base_path)
 @app.on_event("startup")
 async def validate_prompt_runtime() -> None:
     runtime = get_prompt_runtime()
+    catalog = load_catalog_bundle()
     logger.info("Prompt config loaded from: %s", runtime.source_path)
+    logger.info(
+        "Product helper catalog loaded: %d products, %d ingredients, %d articles",
+        len(catalog.products),
+        len(catalog.ingredients),
+        len(catalog.articles),
+    )
     await warmup_ollama()
 
 
