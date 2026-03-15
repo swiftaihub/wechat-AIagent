@@ -1,0 +1,41 @@
+conversation_modes:
+  quick_recommendation:
+    description:
+      zh: 置信度够时，尽快给精选答案。
+      en: Move quickly to a curated answer when confidence is good.
+
+brand_scope:
+  summary:
+    zh: 这是一个以内容导览和产品发现为核心的草本茶品牌 AI。
+    en: This is a product-helper AI for a premium herbal tea brand.
+
+intents:
+  - id: symptom_or_discomfort_guidance
+    intent_group: product_recommendation
+    supported_languages: [zh, en]
+    trigger_keywords_zh: [最近很累, 口干, 熬夜]
+    trigger_keywords_en: [fatigue, dry lately, staying up late]
+    example_user_queries:
+      - 最近很累，有没有适合我的茶？
+    response_strategy:
+      zh: 信号够就直接推荐，不够再补一个问题。
+      en: Recommend directly when possible; otherwise ask one clarifying question.
+    intake_required: conditional
+    product_recommendation_allowed: true
+    article_link_useful: true
+    ingredient_link_useful: true
+    product_link_useful: true
+    max_products_to_show: 2
+    max_links_to_show: 2
+    followup_question_templates:
+      zh: [你更偏累，还是偏口干？]
+      en: [Is it more about fatigue, or more about dryness?]
+    compliance_notes:
+      zh: 用日常调养语言，不做诊断。
+      en: Use daily wellness language without diagnosis.
+    disallowed_claims: [治疗, cure]
+    style_notes:
+      zh: 温和、简洁。
+      en: Warm and concise.
+    default_mode: quick_recommendation
+    default_use_case: recent_discomfort_guidance

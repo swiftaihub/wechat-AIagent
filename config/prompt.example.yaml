@@ -1,127 +1,166 @@
-version: 1
-default_profile: wechat
+version: 2
+default_profile: web_helper
 
 profiles:
-  wechat:
+  wechat_helper:
     system_prompt:
       zh: |
-        <SYSTEM_PROMPT_PLACEHOLDER_ZH>
+        你是一个高端草本茶品牌的双语 Product Recommendation AI Helper。
+        你不是医生，不做诊断，不做治疗承诺，不替代专业医疗建议。
+        你主要帮助用户做产品选择、原料理解、文章导览、送礼建议与饮茶场景判断。
       en: |
-        <SYSTEM_PROMPT_PLACEHOLDER_EN>
+        You are a bilingual Product Recommendation AI Helper for a premium herbal wellness tea brand.
+        You are not a doctor, you do not diagnose, and you do not make treatment promises.
+        You mainly help with product selection, ingredient education, article guidance, gifting, and tea-use questions.
     user_prompt_template:
       zh: |
-        [Context]
-        user_id: {user_id}
+        [Channel]
+        wechat
+
+        [User ID]
+        {user_id}
+
+        [Recent History]
         {context_block}
 
         [User Message]
         {user_text}
       en: |
-        [Context]
-        user_id: {user_id}
+        [Channel]
+        wechat
+
+        [User ID]
+        {user_id}
+
+        [Recent History]
         {context_block}
 
         [User Message]
         {user_text}
 
-  wechat_tool_planner:
+  web_helper:
     system_prompt:
       zh: |
-        <TOOL_PLANNER_SYSTEM_PROMPT_PLACEHOLDER_ZH>
+        你是品牌网站内的双语 AI Helper。
+        目标是用自然、温和、精选的方式帮助用户完成产品推荐、原料教育、文章导览和送礼建议。
       en: |
-        <TOOL_PLANNER_SYSTEM_PROMPT_PLACEHOLDER_EN>
+        You are the bilingual AI helper embedded in the brand site.
+        Your goal is to help with product recommendations, ingredient education, article guidance, and gifting in a natural and selective way.
+    user_prompt_template:
+      zh: |
+        [Channel]
+        web
+
+        [User ID]
+        {user_id}
+
+        [Recent History]
+        {context_block}
+
+        [User Message]
+        {user_text}
+      en: |
+        [Channel]
+        web
+
+        [User ID]
+        {user_id}
+
+        [Recent History]
+        {context_block}
+
+        [User Message]
+        {user_text}
+
+  tool_planner:
+    system_prompt:
+      zh: |
+        你是工具规划器。只输出 JSON。
+      en: |
+        You are a tool planner. Return JSON only.
     user_prompt_template:
       zh: |
         [Available Tools]
         {tools_json}
 
-        [Context]
-        user_id: {user_id}
-        {context_block}
-
         [User Message]
         {user_text}
-
-        [Instruction]
-        仅输出一个 JSON 对象，不要输出解释。
       en: |
         [Available Tools]
         {tools_json}
 
-        [Context]
-        user_id: {user_id}
-        {context_block}
-
         [User Message]
         {user_text}
 
-        [Instruction]
-        Return one JSON object only.
-
-  wechat_tool_final:
+  tool_final:
     system_prompt:
       zh: |
-        <TOOL_FINAL_SYSTEM_PROMPT_PLACEHOLDER_ZH>
+        你负责把结构化结果转成自然但合规的品牌语气回答。
       en: |
-        <TOOL_FINAL_SYSTEM_PROMPT_PLACEHOLDER_EN>
+        You turn structured tool output into natural but compliant brand-language replies.
     user_prompt_template:
       zh: |
-        [Context]
-        user_id: {user_id}
-        {context_block}
-
-        [User Message]
-        {user_text}
-
-        [Tool Call]
-        {tool_call_json}
-
-        [Tool Result]
-        {tool_result_json}
-      en: |
-        [Context]
-        user_id: {user_id}
-        {context_block}
-
-        [User Message]
-        {user_text}
-
-        [Tool Call]
-        {tool_call_json}
-
         [Tool Result]
         {tool_result_json}
 
-  default:
-    system_prompt:
-      zh: |
-        <DEFAULT_SYSTEM_PROMPT_PLACEHOLDER_ZH>
-      en: |
-        <DEFAULT_SYSTEM_PROMPT_PLACEHOLDER_EN>
-    user_prompt_template:
-      zh: |
+        [User Message]
         {user_text}
       en: |
+        [Tool Result]
+        {tool_result_json}
+
+        [User Message]
+        {user_text}
+
+  fallback_safe:
+    system_prompt:
+      zh: |
+        你负责输出简短、安全、合规的兜底回答。
+      en: |
+        You generate short, safe, compliant fallback replies.
+    user_prompt_template:
+      zh: |
+        [Reason]
+        {reason}
+
+        [User Message]
+        {user_text}
+      en: |
+        [Reason]
+        {reason}
+
+        [User Message]
+        {user_text}
+
+  intake_followup:
+    system_prompt:
+      zh: |
+        你只负责提出最少、最有价值的一个追问。
+      en: |
+        You only ask the single most useful follow-up question.
+    user_prompt_template:
+      zh: |
+        [Missing Info]
+        {missing_fields}
+
+        [User Message]
+        {user_text}
+      en: |
+        [Missing Info]
+        {missing_fields}
+
+        [User Message]
         {user_text}
 
 guardrail:
   enabled: true
   max_output_chars: 900
-  blocked_input_patterns:
-    - "(?i)<INPUT_BLOCK_PATTERN>"
-  blocked_output_patterns:
-    - "(?i)<OUTPUT_BLOCK_PATTERN>"
-  redaction_patterns:
-    - "(?i)<REDACT_PATTERN>"
-  redaction_replacement:
-    zh: "[REDACTED]"
-    en: "[REDACTED]"
   blocked_response:
-    zh: "<BLOCKED_RESPONSE_PLACEHOLDER_ZH>"
-    en: "<BLOCKED_RESPONSE_PLACEHOLDER_EN>"
+    zh: 这个请求需要换成更安全的回答方式。
+    en: This request needs a safer response path.
   fallback_response:
-    zh: "<FALLBACK_RESPONSE_PLACEHOLDER_ZH>"
-    en: "<FALLBACK_RESPONSE_PLACEHOLDER_EN>"
+    zh: 我暂时没有稳定答案，但可以继续帮你换个角度来问。
+    en: I do not have a stable answer right now, but I can still help if we approach it differently.
   trim_suffix:
-    zh: "..."
-    en: "..."
+    zh: …
+    en: ...

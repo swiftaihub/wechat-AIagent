@@ -1,0 +1,1080 @@
+[
+  {
+    "slug": "astragalus",
+    "name": {
+      "zh": "黄芪",
+      "en": "Astragalus Root"
+    },
+    "aliases": {
+      "zh": [
+        "北芪"
+      ],
+      "en": [
+        "milkvetch root"
+      ]
+    },
+    "summary": {
+      "zh": "常见于偏温和的补养型茶饮中，风味淡雅，常作为茶底提升整体厚度。",
+      "en": "A classic ingredient in gentle restorative tea blends, often used to build body and depth with a mild earthy-sweet profile."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "多糖",
+        "皂苷",
+        "黄酮"
+      ],
+      "en": [
+        "polysaccharides",
+        "saponins",
+        "flavonoids"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统茶饮中常用于日常调养，适合与红枣、枸杞、陈皮等搭配。",
+      "en": "Traditionally used in daily wellness teas and often paired with red date, goji, and chenpi."
+    },
+    "flavor_profile": {
+      "zh": [
+        "豆香",
+        "淡甘",
+        "温和"
+      ],
+      "en": [
+        "beany",
+        "lightly sweet",
+        "gentle"
+      ]
+    },
+    "pairings": [
+      "red-date",
+      "chenpi",
+      "goji"
+    ],
+    "cautions": {
+      "zh": "感冒发热或明显上火时不建议大量连续饮用；如有个体情况请咨询专业人士。",
+      "en": "Avoid heavy continuous use during fever or obvious heat signs. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/astragalus/raw.jpg",
+      "/images/ingredients/astragalus/brew.jpg"
+    ]
+  },
+  {
+    "slug": "red-date",
+    "name": {
+      "zh": "红枣",
+      "en": "Red Date"
+    },
+    "aliases": {
+      "zh": [
+        "大枣"
+      ],
+      "en": [
+        "jujube",
+        "Chinese red date"
+      ]
+    },
+    "summary": {
+      "zh": "常用于养生茶中增加自然甜感与圆润口感，是大众接受度很高的配料。",
+      "en": "A widely loved tea ingredient that adds natural sweetness and a round, comforting taste."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "多糖",
+        "维生素",
+        "矿物质"
+      ],
+      "en": [
+        "polysaccharides",
+        "vitamins",
+        "minerals"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统饮食文化中常用于日常茶饮与炖煮配方，帮助平衡整体风味。",
+      "en": "Traditionally used in teas and soups to round out flavor and make blends feel more approachable."
+    },
+    "flavor_profile": {
+      "zh": [
+        "枣香",
+        "甘甜",
+        "温润"
+      ],
+      "en": [
+        "date-like",
+        "sweet",
+        "comforting"
+      ]
+    },
+    "pairings": [
+      "goji",
+      "chenpi",
+      "astragalus"
+    ],
+    "cautions": {
+      "zh": "偏甜，控制糖分摄入者可留意用量；如有个体情况请咨询专业人士。",
+      "en": "Naturally sweet, so portion awareness may be helpful for those monitoring sugar intake. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/red-date/raw.jpg",
+      "/images/ingredients/red-date/brew.jpg"
+    ]
+  },
+  {
+    "slug": "goji",
+    "name": {
+      "zh": "枸杞",
+      "en": "Goji Berry"
+    },
+    "aliases": {
+      "zh": [
+        "枸杞子"
+      ],
+      "en": [
+        "wolfberry"
+      ]
+    },
+    "summary": {
+      "zh": "常见于传统养生茶饮中，风味微甜。",
+      "en": "A commonly used ingredient in traditional wellness tea with a gently sweet taste."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "多糖",
+        "类胡萝卜素",
+        "维生素"
+      ],
+      "en": [
+        "polysaccharides",
+        "carotenoids",
+        "vitamins"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统饮食文化中常用于日常调养。",
+      "en": "Traditionally used in daily wellness routines."
+    },
+    "flavor_profile": {
+      "zh": [
+        "微甜",
+        "温和"
+      ],
+      "en": [
+        "mildly sweet",
+        "gentle"
+      ]
+    },
+    "pairings": [
+      "red-date",
+      "american-ginseng",
+      "maidong"
+    ],
+    "cautions": {
+      "zh": "如有特殊情况请咨询专业人士。",
+      "en": "Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/goji/raw.jpg",
+      "/images/ingredients/goji/brew.jpg"
+    ]
+  },
+  {
+    "slug": "chenpi",
+    "name": {
+      "zh": "陈皮",
+      "en": "Chenpi"
+    },
+    "aliases": {
+      "zh": [
+        "广陈皮"
+      ],
+      "en": [
+        "aged tangerine peel",
+        "dried citrus peel"
+      ]
+    },
+    "summary": {
+      "zh": "常用于茶饮中增添清晰柑橘香，并让整体口感更轻盈利落。",
+      "en": "Used to bring a bright citrus aroma and a cleaner, lighter finish to herbal tea blends."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "挥发油",
+        "黄酮",
+        "柑橘类成分"
+      ],
+      "en": [
+        "volatile oils",
+        "flavonoids",
+        "citrus compounds"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统茶饮中常与红枣、茯苓、山楂等搭配，提升香气层次。",
+      "en": "Traditionally paired with ingredients like red date, poria, and hawthorn to add aromatic lift."
+    },
+    "flavor_profile": {
+      "zh": [
+        "柑橘香",
+        "微苦",
+        "木香"
+      ],
+      "en": [
+        "citrusy",
+        "lightly bitter",
+        "woody"
+      ]
+    },
+    "pairings": [
+      "red-date",
+      "astragalus",
+      "poria"
+    ],
+    "cautions": {
+      "zh": "口干明显或胃部较敏感者可酌情减量；如有个体情况请咨询专业人士。",
+      "en": "Use lighter amounts if you are very dry or have a sensitive stomach. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/chenpi/raw.jpg",
+      "/images/ingredients/chenpi/brew.jpg"
+    ]
+  },
+  {
+    "slug": "poria",
+    "name": {
+      "zh": "茯苓",
+      "en": "Poria"
+    },
+    "aliases": {
+      "zh": [
+        "云苓"
+      ],
+      "en": [
+        "hoelen",
+        "poria cocos"
+      ]
+    },
+    "summary": {
+      "zh": "在轻补型与平衡型茶饮中较常见，风味淡雅，常用于营造清轻不腻的口感。",
+      "en": "A mild ingredient often used in lighter balancing blends to keep the overall profile clean and not overly rich."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "多糖",
+        "三萜",
+        "膳食纤维"
+      ],
+      "en": [
+        "polysaccharides",
+        "triterpenes",
+        "dietary fiber"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统配方中常与黄芪、陈皮、山楂等搭配，做成更轻盈的茶饮路线。",
+      "en": "Traditionally paired with astragalus, chenpi, or hawthorn in lighter tea formulas."
+    },
+    "flavor_profile": {
+      "zh": [
+        "清淡",
+        "柔和",
+        "微木香"
+      ],
+      "en": [
+        "mild",
+        "soft",
+        "lightly woody"
+      ]
+    },
+    "pairings": [
+      "chenpi",
+      "astragalus",
+      "red-date"
+    ],
+    "cautions": {
+      "zh": "体质偏干或饮用后觉得口干者可减少频率；如有个体情况请咨询专业人士。",
+      "en": "Reduce frequency if you tend to dryness or feel overly dry after use. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/poria/raw.jpg",
+      "/images/ingredients/poria/brew.jpg"
+    ]
+  },
+  {
+    "slug": "longan",
+    "name": {
+      "zh": "桂圆",
+      "en": "Dried Longan"
+    },
+    "aliases": {
+      "zh": [
+        "龙眼肉"
+      ],
+      "en": [
+        "longan aril"
+      ]
+    },
+    "summary": {
+      "zh": "带有明显果甜香气，常用于大众接受度较高的甜润型茶饮。",
+      "en": "Naturally fruity and sweet, often used in comforting teas with broad taste appeal."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "天然糖分",
+        "多酚",
+        "矿物质"
+      ],
+      "en": [
+        "natural sugars",
+        "polyphenols",
+        "minerals"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统饮食中常与红枣、枸杞搭配，做成口感偏甜润的日常茶饮。",
+      "en": "Traditionally paired with red date and goji for sweeter everyday tea blends."
+    },
+    "flavor_profile": {
+      "zh": [
+        "清甜",
+        "果香",
+        "温润"
+      ],
+      "en": [
+        "sweet",
+        "fruity",
+        "comforting"
+      ]
+    },
+    "pairings": [
+      "red-date",
+      "goji"
+    ],
+    "cautions": {
+      "zh": "偏甜偏润，明显上火或不喜甜感时可减量；如有个体情况请咨询专业人士。",
+      "en": "Because it is sweet and rich, lighter use may be preferred during obvious heat signs or if you dislike sweeter profiles. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/longan/raw.jpg",
+      "/images/ingredients/longan/brew.jpg"
+    ]
+  },
+  {
+    "slug": "ginger",
+    "name": {
+      "zh": "生姜",
+      "en": "Ginger"
+    },
+    "aliases": {
+      "zh": [
+        "姜片"
+      ],
+      "en": [
+        "fresh ginger"
+      ]
+    },
+    "summary": {
+      "zh": "辛香明显，常用于偏暖身、偏驱寒感的茶饮中。",
+      "en": "A warming ingredient with a clear spicy aroma, often used in teas designed for cozy, warming profiles."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "姜辣素",
+        "挥发油",
+        "多酚"
+      ],
+      "en": [
+        "gingerols",
+        "volatile oils",
+        "polyphenols"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统家常茶饮中常与红枣、陈皮搭配，形成暖香型组合。",
+      "en": "Traditionally paired with red date and chenpi in home-style warming tea combinations."
+    },
+    "flavor_profile": {
+      "zh": [
+        "辛香",
+        "暖感",
+        "清辣"
+      ],
+      "en": [
+        "spicy-aromatic",
+        "warming",
+        "bright heat"
+      ]
+    },
+    "pairings": [
+      "red-date",
+      "chenpi"
+    ],
+    "cautions": {
+      "zh": "咽痛、口腔溃疡或明显燥热时不宜多用；如有个体情况请咨询专业人士。",
+      "en": "Use less during sore throat, mouth ulcers, or obvious heat and dryness. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/ginger/raw.jpg",
+      "/images/ingredients/ginger/brew.jpg"
+    ]
+  },
+  {
+    "slug": "american-ginseng",
+    "name": {
+      "zh": "西洋参",
+      "en": "American Ginseng"
+    },
+    "aliases": {
+      "zh": [
+        "花旗参"
+      ],
+      "en": [
+        "Panax quinquefolius"
+      ]
+    },
+    "summary": {
+      "zh": "常见于偏精致的恢复型茶饮中，风味微甘，带轻柔参香。",
+      "en": "Often featured in refined restorative blends with a lightly sweet taste and subtle ginseng aroma."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "人参皂苷",
+        "多糖",
+        "微量矿物质"
+      ],
+      "en": [
+        "ginsenosides",
+        "polysaccharides",
+        "trace minerals"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统饮食文化中常用于较高端的调养型茶饮，常与麦冬、枸杞等搭配。",
+      "en": "Traditionally used in premium wellness teas and often paired with ophiopogon or goji."
+    },
+    "flavor_profile": {
+      "zh": [
+        "微甘",
+        "轻凉感",
+        "参香"
+      ],
+      "en": [
+        "lightly sweet",
+        "refreshing",
+        "ginseng-like"
+      ]
+    },
+    "pairings": [
+      "goji",
+      "maidong",
+      "cordyceps"
+    ],
+    "cautions": {
+      "zh": "感冒、腹泻或胃寒明显时不建议连续饮用；如有个体情况请咨询专业人士。",
+      "en": "Avoid continuous use during colds, diarrhea, or obvious cold-type digestion. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/american-ginseng/raw.jpg",
+      "/images/ingredients/american-ginseng/brew.jpg"
+    ]
+  },
+  {
+    "slug": "maidong",
+    "name": {
+      "zh": "麦冬",
+      "en": "Ophiopogon Root"
+    },
+    "aliases": {
+      "zh": [
+        "麦门冬"
+      ],
+      "en": [
+        "dwarf lilyturf tuber",
+        "ophiopogon japonicus"
+      ]
+    },
+    "summary": {
+      "zh": "风味柔和偏清润，常用于清润型、夜间恢复型茶饮。",
+      "en": "A soft, moistening ingredient often used in gentle, refreshing blends and night-recovery teas."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "多糖",
+        "皂苷",
+        "氨基酸"
+      ],
+      "en": [
+        "polysaccharides",
+        "saponins",
+        "amino acids"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统茶饮中常与西洋参、玉竹、枸杞搭配，形成清润路线。",
+      "en": "Traditionally paired with American ginseng, solomon's seal, and goji in moistening-style teas."
+    },
+    "flavor_profile": {
+      "zh": [
+        "清润",
+        "微甘",
+        "柔和"
+      ],
+      "en": [
+        "moistening",
+        "lightly sweet",
+        "soft"
+      ]
+    },
+    "pairings": [
+      "goji",
+      "american-ginseng",
+      "yuzhu"
+    ],
+    "cautions": {
+      "zh": "脾胃偏寒、容易腹泻者可减少频率；如有个体情况请咨询专业人士。",
+      "en": "Use less often if you have cold-sensitive digestion or loose stools. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/maidong/raw.jpg",
+      "/images/ingredients/maidong/brew.jpg"
+    ]
+  },
+  {
+    "slug": "yuzhu",
+    "name": {
+      "zh": "玉竹",
+      "en": "Solomon's Seal Rhizome"
+    },
+    "aliases": {
+      "zh": [
+        "玉竹片"
+      ],
+      "en": [
+        "polygonatum odoratum",
+        "solomon's seal"
+      ]
+    },
+    "summary": {
+      "zh": "清甜柔和，常用于高接受度的清润型茶饮。",
+      "en": "A smooth, gently sweet ingredient often used in high-acceptance moistening tea blends."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "多糖",
+        "皂苷",
+        "黏多糖样成分"
+      ],
+      "en": [
+        "polysaccharides",
+        "saponins",
+        "mucilaginous compounds"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统茶饮中常与麦冬、枸杞搭配，营造柔润顺口的风味。",
+      "en": "Traditionally paired with ophiopogon and goji to create smooth, gently moistening teas."
+    },
+    "flavor_profile": {
+      "zh": [
+        "清甜",
+        "柔润",
+        "淡雅"
+      ],
+      "en": [
+        "softly sweet",
+        "smooth",
+        "delicate"
+      ]
+    },
+    "pairings": [
+      "maidong",
+      "goji"
+    ],
+    "cautions": {
+      "zh": "便溏或脾胃偏寒者不宜过量；如有个体情况请咨询专业人士。",
+      "en": "Avoid excessive use if you are prone to loose stools or cold-type digestion. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/yuzhu/raw.jpg",
+      "/images/ingredients/yuzhu/brew.jpg"
+    ]
+  },
+  {
+    "slug": "chrysanthemum",
+    "name": {
+      "zh": "菊花",
+      "en": "Chrysanthemum Flower"
+    },
+    "aliases": {
+      "zh": [
+        "杭菊"
+      ],
+      "en": [
+        "chrysanthemum blossom"
+      ]
+    },
+    "summary": {
+      "zh": "花香清爽，是花草茶中非常常见的清新型配料。",
+      "en": "A classic floral ingredient that brings a refreshing aroma to herbal teas."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "黄酮",
+        "酚酸",
+        "挥发油"
+      ],
+      "en": [
+        "flavonoids",
+        "phenolic acids",
+        "volatile oils"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统花茶中常与枸杞、金银花搭配，口感清新。",
+      "en": "Traditionally paired with goji and honeysuckle in fresh floral teas."
+    },
+    "flavor_profile": {
+      "zh": [
+        "花香",
+        "清爽",
+        "微甘"
+      ],
+      "en": [
+        "floral",
+        "refreshing",
+        "lightly sweet"
+      ]
+    },
+    "pairings": [
+      "goji",
+      "honeysuckle"
+    ],
+    "cautions": {
+      "zh": "体质偏寒、容易腹泻者不宜长期大量饮用；如有个体情况请咨询专业人士。",
+      "en": "Avoid long-term heavy use if you are cold-sensitive or prone to loose stools. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/chrysanthemum/raw.jpg",
+      "/images/ingredients/chrysanthemum/brew.jpg"
+    ]
+  },
+  {
+    "slug": "honeysuckle",
+    "name": {
+      "zh": "金银花",
+      "en": "Honeysuckle Flower"
+    },
+    "aliases": {
+      "zh": [
+        "忍冬花"
+      ],
+      "en": [
+        "lonicera flower"
+      ]
+    },
+    "summary": {
+      "zh": "带有清新花草气息，常用于偏清爽路线的花茶配方。",
+      "en": "A clean floral ingredient commonly used in cooling-style herbal tea blends."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "绿原酸类",
+        "黄酮",
+        "有机酸"
+      ],
+      "en": [
+        "chlorogenic acids",
+        "flavonoids",
+        "organic acids"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统花茶搭配中常与菊花、少量枸杞同用，形成清新平衡的花香感。",
+      "en": "Traditionally combined with chrysanthemum and a touch of goji for balanced floral teas."
+    },
+    "flavor_profile": {
+      "zh": [
+        "清花香",
+        "轻盈",
+        "微甘"
+      ],
+      "en": [
+        "clean floral",
+        "light",
+        "lightly sweet"
+      ]
+    },
+    "pairings": [
+      "chrysanthemum",
+      "goji"
+    ],
+    "cautions": {
+      "zh": "脾胃偏寒或食少便溏时建议减量；如有个体情况请咨询专业人士。",
+      "en": "Use smaller amounts if you are cold-sensitive or prone to loose stools. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/honeysuckle/raw.jpg",
+      "/images/ingredients/honeysuckle/brew.jpg"
+    ]
+  },
+  {
+    "slug": "rose",
+    "name": {
+      "zh": "玫瑰花",
+      "en": "Rose Bud"
+    },
+    "aliases": {
+      "zh": [
+        "重瓣玫瑰"
+      ],
+      "en": [
+        "rose flower",
+        "rose petal"
+      ]
+    },
+    "summary": {
+      "zh": "花香明显，常用于提升茶饮香气与仪式感。",
+      "en": "A fragrant floral ingredient often used to elevate aroma and add a ritual feel to tea blends."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "多酚",
+        "挥发油",
+        "花青素"
+      ],
+      "en": [
+        "polyphenols",
+        "volatile oils",
+        "anthocyanins"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统花草茶中常与陈皮、佛手或枸杞搭配，形成花果香路线。",
+      "en": "Traditionally paired with chenpi, buddha's hand, or goji in floral-citrus tea blends."
+    },
+    "flavor_profile": {
+      "zh": [
+        "花香",
+        "微甜",
+        "高雅"
+      ],
+      "en": [
+        "floral",
+        "lightly sweet",
+        "elegant"
+      ]
+    },
+    "pairings": [
+      "chenpi",
+      "fo-shou",
+      "saffron"
+    ],
+    "cautions": {
+      "zh": "胃部较敏感或特殊时期饮用前可先咨询专业人士。",
+      "en": "If you have a sensitive stomach or special individual considerations, consult a qualified professional first."
+    },
+    "images": [
+      "/images/ingredients/rose/raw.jpg",
+      "/images/ingredients/rose/brew.jpg"
+    ]
+  },
+  {
+    "slug": "fo-shou",
+    "name": {
+      "zh": "佛手",
+      "en": "Buddha's Hand Citrus"
+    },
+    "aliases": {
+      "zh": [
+        "佛手柑"
+      ],
+      "en": [
+        "fingered citron"
+      ]
+    },
+    "summary": {
+      "zh": "柑橘调明显，常用于花果香型茶饮中提升清新感与辨识度。",
+      "en": "A distinctly citrusy ingredient used to sharpen aroma and character in floral-fruit tea blends."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "挥发油",
+        "黄酮",
+        "柑橘类成分"
+      ],
+      "en": [
+        "volatile oils",
+        "flavonoids",
+        "citrus compounds"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统花果茶搭配中常与玫瑰、陈皮同用，形成更立体的柑橘花香。",
+      "en": "Traditionally paired with rose and chenpi for layered citrus-floral tea profiles."
+    },
+    "flavor_profile": {
+      "zh": [
+        "柑橘香",
+        "清苦香",
+        "明亮"
+      ],
+      "en": [
+        "citrusy",
+        "aromatic bittersweet",
+        "bright"
+      ]
+    },
+    "pairings": [
+      "rose",
+      "chenpi"
+    ],
+    "cautions": {
+      "zh": "胃酸反流明显或空腹时可减少饮用；如有个体情况请咨询专业人士。",
+      "en": "Use less if you have significant acid reflux or prefer not to drink citrusy teas on an empty stomach. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/fo-shou/raw.jpg",
+      "/images/ingredients/fo-shou/brew.jpg"
+    ]
+  },
+  {
+    "slug": "hawthorn",
+    "name": {
+      "zh": "山楂",
+      "en": "Hawthorn Berry"
+    },
+    "aliases": {
+      "zh": [
+        "山楂片"
+      ],
+      "en": [
+        "haw flakes",
+        "Chinese hawthorn"
+      ]
+    },
+    "summary": {
+      "zh": "酸甜开胃，常用于饭后场景型茶饮，口感辨识度高。",
+      "en": "Tangy and bright, commonly used in after-meal tea blends with a very recognizable taste."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "黄酮",
+        "有机酸",
+        "果胶"
+      ],
+      "en": [
+        "flavonoids",
+        "organic acids",
+        "pectin"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统日常饮食中常与陈皮、茯苓等搭配，形成偏酸香的茶饮。",
+      "en": "Traditionally paired with chenpi or poria in tangy, after-meal style tea blends."
+    },
+    "flavor_profile": {
+      "zh": [
+        "酸甜",
+        "果香",
+        "轻爽"
+      ],
+      "en": [
+        "tangy-sweet",
+        "fruity",
+        "light"
+      ]
+    },
+    "pairings": [
+      "chenpi",
+      "poria"
+    ],
+    "cautions": {
+      "zh": "胃酸偏多、空腹或胃部敏感者可减量；如有个体情况请咨询专业人士。",
+      "en": "Use smaller amounts if you have high stomach acid, a sensitive stomach, or prefer not to drink it on an empty stomach. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/hawthorn/raw.jpg",
+      "/images/ingredients/hawthorn/brew.jpg"
+    ]
+  },
+  {
+    "slug": "huangjing",
+    "name": {
+      "zh": "黄精",
+      "en": "Polygonatum Rhizome"
+    },
+    "aliases": {
+      "zh": [
+        "黄精片"
+      ],
+      "en": [
+        "polygonatum",
+        "sealwort rhizome"
+      ]
+    },
+    "summary": {
+      "zh": "口感甘润平和，常见于偏恢复型、较柔和的补养茶饮。",
+      "en": "Smooth and gently sweet, often used in softer restorative tea blends."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "多糖",
+        "皂苷",
+        "氨基酸"
+      ],
+      "en": [
+        "polysaccharides",
+        "saponins",
+        "amino acids"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统调养型茶饮中常与枸杞、红枣或西洋参搭配，口感较平和。",
+      "en": "Traditionally paired with goji, red date, or American ginseng in gentle restorative teas."
+    },
+    "flavor_profile": {
+      "zh": [
+        "甘润",
+        "柔和",
+        "微甜"
+      ],
+      "en": [
+        "smooth",
+        "soft",
+        "lightly sweet"
+      ]
+    },
+    "pairings": [
+      "goji",
+      "red-date",
+      "cordyceps"
+    ],
+    "cautions": {
+      "zh": "偏湿滞、腹胀明显或便溏者不宜连续过量饮用；如有个体情况请咨询专业人士。",
+      "en": "Avoid excessive continuous use if you feel overly heavy, bloated, or are prone to loose stools. Consult a qualified professional for individual concerns."
+    },
+    "images": [
+      "/images/ingredients/huangjing/raw.jpg",
+      "/images/ingredients/huangjing/brew.jpg"
+    ]
+  },
+  {
+    "slug": "saffron",
+    "name": {
+      "zh": "藏红花",
+      "en": "Saffron"
+    },
+    "aliases": {
+      "zh": [
+        "番红花"
+      ],
+      "en": [
+        "saffron stigma"
+      ]
+    },
+    "summary": {
+      "zh": "风味高雅且辨识度强，常用于高端花草茶中营造精致感。",
+      "en": "A premium aromatic ingredient used to create a refined and distinctive tea experience."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "藏红花素",
+        "番红花醛",
+        "苦番红花苷"
+      ],
+      "en": [
+        "crocin",
+        "safranal",
+        "picrocrocin"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统高端花草茶中常与玫瑰、枸杞搭配，形成花香层次与礼赠感。",
+      "en": "Traditionally paired with rose and goji in premium floral blends with a giftable feel."
+    },
+    "flavor_profile": {
+      "zh": [
+        "花香",
+        "雅致辛香",
+        "微甘"
+      ],
+      "en": [
+        "floral",
+        "elegantly spiced",
+        "lightly sweet"
+      ]
+    },
+    "pairings": [
+      "goji",
+      "rose"
+    ],
+    "cautions": {
+      "zh": "孕期、经量过多或有出血倾向者应避免或先咨询专业人士。",
+      "en": "Avoid during pregnancy, heavy menstrual bleeding, or bleeding-related concerns unless advised by a qualified professional."
+    },
+    "images": [
+      "/images/ingredients/saffron/raw.jpg",
+      "/images/ingredients/saffron/brew.jpg"
+    ]
+  },
+  {
+    "slug": "cordyceps",
+    "name": {
+      "zh": "冬虫夏草",
+      "en": "Cordyceps"
+    },
+    "aliases": {
+      "zh": [
+        "虫草"
+      ],
+      "en": [
+        "caterpillar fungus"
+      ]
+    },
+    "summary": {
+      "zh": "属于高端滋养型原料，风味甘润细雅，常用于礼赠感较强的恢复型茶饮。",
+      "en": "A prized premium ingredient with a smooth, refined taste, often featured in giftable restorative tea blends."
+    },
+    "nutrition_focus": {
+      "zh": [
+        "虫草素",
+        "多糖",
+        "核苷类成分"
+      ],
+      "en": [
+        "cordycepin",
+        "polysaccharides",
+        "nucleosides"
+      ]
+    },
+    "traditional_use": {
+      "zh": "传统高端调养场景中常与西洋参、黄精、枸杞搭配，形成层次更丰富的茶饮。",
+      "en": "Traditionally paired with American ginseng, polygonatum, and goji in premium layered tea formulas."
+    },
+    "flavor_profile": {
+      "zh": [
+        "甘润",
+        "细雅",
+        "淡淡菌香"
+      ],
+      "en": [
+        "smooth",
+        "refined",
+        "subtle earthy-fungal note"
+      ]
+    },
+    "pairings": [
+      "american-ginseng",
+      "huangjing",
+      "goji"
+    ],
+    "cautions": {
+      "zh": "孕期、慢性病管理期、正在服药或急性不适期间，建议先咨询专业人士。",
+      "en": "If pregnant, managing a chronic condition, taking medication, or experiencing acute illness, consult a qualified professional first."
+    },
+    "images": [
+      "/images/ingredients/cordyceps/raw.jpg",
+      "/images/ingredients/cordyceps/brew.jpg"
+    ]
+  }
+]

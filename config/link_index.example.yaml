@@ -1,0 +1,23 @@
+base_url: https://tea.swiftaihub.com
+
+routes:
+  product: /{locale}/products/{slug}
+  ingredient: /{locale}/ingredients/{slug}
+  article: /{locale}/articles/{slug}
+  collection: /{locale}/shop/{slug}
+
+selection_rules:
+  max_links_default: 2
+
+collections:
+  - slug: all
+    zh_title: 全部茶饮
+    en_title: All teas
+    tags: [discovery]
+    use_cases: [daily_wellness]
+    funnel_stage: discovery
+    priority: 10
+
+product_overrides: {}
+ingredient_overrides: {}
+article_overrides: {}

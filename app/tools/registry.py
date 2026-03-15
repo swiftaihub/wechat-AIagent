@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from app.tools.advice_table import match_advice_from_table
 from app.tools.constitution_advice import assess_constitution_and_recommend_herbs
 
 
@@ -16,35 +15,30 @@ class ToolSpec:
 
 
 TOOL_SPECS: dict[str, ToolSpec] = {
-    "assess_constitution_and_recommend_herbs": ToolSpec(
-        name="assess_constitution_and_recommend_herbs",
+    "assess_constitution_and_recommend_products": ToolSpec(
+        name="assess_constitution_and_recommend_products",
         description=(
-            "Assess constitution tendency with a scoring matrix and return herbal wellness guidance, "
-            "follow-up questions, and required handoff appendix."
+            "Infer likely constitution tendency, rank 1-3 tea products, and select the most relevant supporting links "
+            "for brand-safe product guidance."
         ),
         json_schema={
             "type": "object",
             "properties": {
-                "query": {"type": "string", "description": "User message for constitution assessment."},
-                "profile": {
-                    "type": "object",
-                    "description": "Optional structured profile fields such as age/gender/sleep/diet.",
-                },
+                "query": {"type": "string", "description": "User message or intake payload."},
+                "profile": {"type": "object", "description": "Optional structured intake fields."},
             },
             "required": ["query"],
             "additionalProperties": False,
         },
     ),
-    "match_advice_from_table": ToolSpec(
-        name="match_advice_from_table",
-        description=(
-            "Match user intent against a local advice table and return structured advice, "
-            "handoffs, follow-up questions, and safety notes."
-        ),
+    "assess_constitution_and_recommend_herbs": ToolSpec(
+        name="assess_constitution_and_recommend_herbs",
+        description="Backward-compatible alias for product-helper recommendations.",
         json_schema={
             "type": "object",
             "properties": {
-                "query": {"type": "string", "description": "User query text to match in table."},
+                "query": {"type": "string"},
+                "profile": {"type": "object"},
             },
             "required": ["query"],
             "additionalProperties": False,
@@ -54,17 +48,13 @@ TOOL_SPECS: dict[str, ToolSpec] = {
 
 
 TOOLS: dict[str, ToolHandler] = {
+    "assess_constitution_and_recommend_products": assess_constitution_and_recommend_herbs,
     "assess_constitution_and_recommend_herbs": assess_constitution_and_recommend_herbs,
-    "match_advice_from_table": match_advice_from_table,
 }
 
 
 def get_tool_specs_for_prompt() -> list[dict[str, Any]]:
     return [
-        {
-            "name": spec.name,
-            "description": spec.description,
-            "json_schema": spec.json_schema,
-        }
+        {"name": spec.name, "description": spec.description, "json_schema": spec.json_schema}
         for spec in TOOL_SPECS.values()
     ]

@@ -1,0 +1,25 @@
+{
+  "slug": "brewing-notes-for-a-lighter-routine",
+  "title": {
+    "en": "Brewing Notes for a Lighter Routine",
+    "zh": "更轻盈日常的冲泡笔记"
+  },
+  "excerpt": {
+    "en": "Placeholder editorial content on brewing temperature, pacing, and taste expectations for refined daily tea rituals.",
+    "zh": "占位编辑内容，围绕冲泡温度、节奏与风味预期，讨论更精致的日常茶饮体验。"
+  },
+  "category": {
+    "en": "Brewing guide",
+    "zh": "冲泡指南"
+  },
+  "tags": {
+    "en": ["Brewing", "Ritual", "Placeholder"],
+    "zh": ["冲泡", "仪式感", "占位内容"]
+  },
+  "coverImage": "/images/articles/brewing-guide.jpg",
+  "featured": true,
+  "publishedAt": "2026-03-10",
+  "readingTheme": "sans",
+  "relatedProducts": ["golden-bloom-clear-gaze-tea", "golden-dew-balance-tea", "moon-dew-night-restore-tea"],
+  "relatedIngredients": ["chrysanthemum", "honeysuckle", "maidong", "yuzhu"]
+}
