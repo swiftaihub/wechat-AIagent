@@ -54,10 +54,6 @@
       <div class="menu-section">
         <div class="menu-section-title" id="sectionRuntime" data-i18n="section_runtime">Runtime</div>
         <div class="runtime-panel">
-          <div class="runtime-panel__label" id="runtimeApiLabel" data-i18n="runtime_api">API</div>
-          <code data-api-base-label="1"></code>
-        </div>
-        <div class="runtime-panel">
           <div class="runtime-panel__label" id="runtimeUserLabel" data-i18n="runtime_user">User ID</div>
           <code data-user-id-label="1"></code>
         </div>
@@ -65,9 +61,14 @@
     </aside>
 
     <div class="workspace" id="appRoot">
-      <aside class="brand-panel">
+      <aside class="brand-panel" id="brandPanel" aria-hidden="true">
         <div class="brand-panel__inner">
-          <div class="brand-badge" id="heroBadge" data-i18n="hero_badge">Guided Wellness Companion</div>
+          <div class="brand-panel__top">
+            <div class="brand-badge" id="heroBadge" data-i18n="hero_badge">Guided Wellness Companion</div>
+            <button class="icon-button icon-button--soft" id="brandPanelCloseBtn" type="button" aria-label="Close brand panel">
+              <span class="icon-close" aria-hidden="true"></span>
+            </button>
+          </div>
 
           <div class="brand-mark">
             <div class="brand-seal" aria-hidden="true">
@@ -116,16 +117,22 @@
             <span class="menu-icon" aria-hidden="true"></span>
           </button>
 
-          <div class="topbar__meta">
-            <div>
+          <div class="topbar__identity">
+            <div class="topbar__heading">
               <p class="topbar__label" id="topbarLabel" data-i18n="topbar_label">Signature Helper AI</p>
-              <div class="topbar__runtime">
-                <span class="runtime-inline-label" id="runtimeApiInlineLabel" data-i18n="runtime_api_inline">API endpoint</span>
-                <code data-api-base-label="1"></code>
-              </div>
+              <button class="brand-trigger" id="brandPanelBtn" type="button" aria-expanded="false" aria-controls="brandPanel">
+                <span class="brand-trigger__seal" aria-hidden="true">
+                  <span class="brand-trigger__ring"></span>
+                  <span class="brand-trigger__stem"></span>
+                </span>
+                <span class="brand-trigger__copy">
+                  <span class="brand-trigger__title" id="brandTriggerTitle">Health Guidance Assistant</span>
+                </span>
+              </button>
             </div>
-            <div class="status" id="statusPill">Ready</div>
           </div>
+
+          <div class="status" id="statusPill">Ready</div>
 
           <button class="lang-btn" id="langToggleBtn" type="button">中文 / English</button>
         </header>

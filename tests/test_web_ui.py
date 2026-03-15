@@ -18,6 +18,9 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("window.__WEBUI_BOOT__", resp.text)
         self.assertIn("web_ui.css", resp.text)
         self.assertIn("web_ui.js", resp.text)
+        self.assertIn('id="brandPanel"', resp.text)
+        self.assertIn('id="brandPanelBtn"', resp.text)
+        self.assertNotIn('data-api-base-label="1"', resp.text)
 
     def test_html_page_includes_runtime_welcome_message(self) -> None:
         html = _build_html_page(
@@ -42,6 +45,25 @@ class WebUiTests(unittest.TestCase):
         self.assertEqual(payload["use_case"], "gifting")
         self.assertEqual(payload["gift_target"], "mother")
         self.assertNotIn("recent_discomfort_multi", payload)
+
+    def test_intake_config_resolves_product_dropdown_options(self) -> None:
+        product_field = next(
+            field
+            for field in INTAKE_CONFIG.get("fields", [])
+            if field.get("name") == "selected_product_slug"
+        )
+        self.assertEqual(product_field.get("ui_variant"), "dropdown")
+        self.assertTrue(product_field.get("options"))
+
+    def test_use_case_field_uses_spotlight_variant(self) -> None:
+        use_case_field = next(
+            field
+            for field in INTAKE_CONFIG.get("fields", [])
+            if field.get("name") == "use_case"
+        )
+        self.assertEqual(use_case_field.get("ui_variant"), "spotlight-grid")
+        self.assertTrue(use_case_field.get("options"))
+        self.assertTrue(any(option.get("description") for option in use_case_field.get("options", [])))
 
     def test_ui_chat_success(self) -> None:
         with patch("app.web_ui.generate_reply", new=AsyncMock(return_value="ok")):

@@ -124,6 +124,19 @@ class ProductHelperEngineTests(unittest.TestCase):
         self.assertTrue(result.support_links)
         self.assertEqual(result.support_links[0].type, "collection")
 
+    def test_service_can_explain_ingredients_for_selected_product(self) -> None:
+        service = get_product_helper_service()
+        result = service.handle(
+            user_id="ingredient-product-user",
+            text='用户基础信息（product_helper intake）：\n```json\n{"use_case":"ingredient_learning","selected_product_slug":"dewlight-replenish-tea"}\n```',
+            channel="web",
+        )
+        self.assertEqual(result.intent, "product_ingredient_breakdown")
+        self.assertIn("清露润元茶", result.reply)
+        self.assertTrue(any(name in result.reply for name in ("西洋参", "麦冬", "枸杞")))
+        self.assertTrue(result.support_links)
+        self.assertEqual(result.support_links[0].type, "product")
+
     def test_catalog_can_fall_back_to_bundled_snapshot(self) -> None:
         with patch("app.product_helper.content._default_product_repo_root", return_value=Path("Z:/missing-product-site")):
             bundle = reload_catalog_bundle()

@@ -138,6 +138,11 @@ def _normalize_field(field: dict[str, Any]) -> dict[str, Any]:
     normalized["label"] = normalize_localized_text(field.get("label", field.get("name", "")))
     if isinstance(field.get("description"), dict) or field.get("description"):
         normalized["description"] = normalize_localized_text(field.get("description", ""))
+    if isinstance(field.get("helper_text"), dict) or field.get("helper_text"):
+        normalized["helper_text"] = normalize_localized_text(field.get("helper_text", ""))
+    if isinstance(field.get("placeholder"), dict) or field.get("placeholder"):
+        normalized["placeholder"] = normalize_localized_text(field.get("placeholder", ""))
+    normalized["ui_variant"] = str(field.get("ui_variant", "")).strip()
 
     options: list[dict[str, Any]] = []
     for option in field.get("options", []) if isinstance(field.get("options"), list) else []:
@@ -146,14 +151,17 @@ def _normalize_field(field: dict[str, Any]) -> dict[str, Any]:
         value = str(option.get("value", "")).strip()
         if not value:
             continue
-        options.append(
-            {
-                "value": value,
-                "label": normalize_localized_text(option.get("label", value), fallback=value),
-                "tags": tuple(str(item).strip() for item in option.get("tags", []) if str(item).strip()),
-                "constitution_weight": option.get("constitution_weight", {}),
-            }
-        )
+        normalized_option = {
+            "value": value,
+            "label": normalize_localized_text(option.get("label", value), fallback=value),
+            "tags": tuple(str(item).strip() for item in option.get("tags", []) if str(item).strip()),
+            "constitution_weight": option.get("constitution_weight", {}),
+        }
+        if isinstance(option.get("description"), dict) or option.get("description"):
+            normalized_option["description"] = normalize_localized_text(option.get("description", ""))
+        if isinstance(option.get("eyebrow"), dict) or option.get("eyebrow"):
+            normalized_option["eyebrow"] = normalize_localized_text(option.get("eyebrow", ""))
+        options.append(normalized_option)
     normalized["options"] = options
     normalized["importance"] = dict(field.get("importance", {})) if isinstance(field.get("importance"), dict) else {}
     normalized["show_if"] = dict(field.get("show_if", {})) if isinstance(field.get("show_if"), dict) else {}
