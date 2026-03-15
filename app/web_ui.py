@@ -5,12 +5,13 @@ import logging
 import os
 import time
 import uuid
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 import yaml
-from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 from app.llm_core import generate_reply
@@ -84,6 +85,12 @@ WEBUI_API_BASE_URL = (
     os.getenv("WEBUI_API_BASE_URL", "").strip()
     or f"{WEBUI_BASE_PATH}/api/chat"
 )
+WEB_UI_ASSET_DIR = Path(__file__).with_name("web_ui_assets")
+WEB_UI_TEMPLATE_PATH = WEB_UI_ASSET_DIR / "web_ui.html"
+WEB_UI_ASSET_MAP: dict[str, tuple[Path, str]] = {
+    "web_ui.css": (WEB_UI_ASSET_DIR / "web_ui.css", "text/css; charset=utf-8"),
+    "web_ui.js": (WEB_UI_ASSET_DIR / "web_ui.js", "application/javascript; charset=utf-8"),
+}
 
 
 def _default_intake_config() -> dict[str, Any]:
@@ -318,10 +325,41 @@ INTAKE_CONFIG = _load_intake_config()
 router = APIRouter()
 
 
+@lru_cache(maxsize=1)
+def _load_web_ui_template() -> str:
+    return WEB_UI_TEMPLATE_PATH.read_text(encoding="utf-8")
+
+
+def _get_web_ui_asset(asset_name: str) -> tuple[Path, str]:
+    asset = WEB_UI_ASSET_MAP.get(asset_name)
+    if asset is None:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    asset_path, media_type = asset
+    if not asset_path.exists():
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return asset_path, media_type
+
+
+def _get_web_ui_asset_url(asset_name: str) -> str:
+    asset_path, _ = _get_web_ui_asset(asset_name)
+    version = int(asset_path.stat().st_mtime)
+    return f"{WEBUI_BASE_PATH}/assets/{asset_name}?v={version}"
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     user_id: str | None = None
     language: str | None = Field(default=None, max_length=16)
+
+
+@router.get("/assets/{asset_name}")
+async def ui_asset(asset_name: str) -> FileResponse:
+    asset_path, media_type = _get_web_ui_asset(asset_name)
+    return FileResponse(
+        asset_path,
+        media_type=media_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 @router.get("", response_class=HTMLResponse)
@@ -383,6 +421,31 @@ def _build_html_page(
     localized_title = _coerce_localized_text(title)
     localized_welcome = _coerce_localized_text(welcome_message)
     safe_title = html.escape(localized_title.get("zh") or localized_title.get("en") or "")
+    meta_description = html.escape(
+        (localized_welcome.get("en") or localized_welcome.get("zh") or safe_title)[:220]
+    )
+    config_json = json.dumps(
+        {
+            "title": localized_title,
+            "welcomeMessage": localized_welcome,
+            "apiBaseUrl": api_base_url,
+        },
+        ensure_ascii=False,
+    ).replace("</", "<\\/")
+    intake_json = json.dumps(intake_config or _default_intake_config(), ensure_ascii=False).replace("</", "<\\/")
+    html_page = _load_web_ui_template()
+    replacements = {
+        "__WEBUI_PAGE_TITLE__": safe_title,
+        "__WEBUI_META_DESCRIPTION__": meta_description,
+        "__WEBUI_CSS_URL__": html.escape(_get_web_ui_asset_url("web_ui.css")),
+        "__WEBUI_JS_URL__": html.escape(_get_web_ui_asset_url("web_ui.js")),
+        "__WEBUI_CONFIG_JSON__": config_json,
+        "__WEBUI_INTAKE_CONFIG_JSON__": intake_json,
+    }
+    for placeholder, value in replacements.items():
+        html_page = html_page.replace(placeholder, value)
+    return html_page
+
     title_json = json.dumps(localized_title, ensure_ascii=False)
     welcome_json = json.dumps(localized_welcome, ensure_ascii=False)
     api_json = json.dumps(api_base_url)
