@@ -1,0 +1,90 @@
+questionnaire:
+  enabled: true
+  auto_collapse_on_submit: true
+  title:
+    zh: 基础信息快速采集
+    en: Quick intake
+  description:
+    zh: 把最近的状态、偏好或送礼方向交给 AI，它会更容易把推荐收得更准。
+    en: Give the assistant a quick sense of your current needs so it can narrow recommendations more clearly.
+  submit_button:
+    zh: 提交并开始推荐
+    en: Submit and guide me
+  reset_button:
+    zh: 重置
+    en: Reset
+  submit_notice:
+    zh: 基础信息已提交，正在整理更贴近你的推荐方向。
+    en: Information submitted. Shaping a more tailored recommendation path now.
+  fields:
+    - name: use_case
+      type: single
+      required: true
+      label:
+        zh: 此次想解决什么
+        en: What brings you here
+      importance:
+        default: 5
+      options:
+        - value: daily_wellness
+          label:
+            zh: 日常养护
+            en: Daily wellness
+        - value: recent_discomfort_guidance
+          label:
+            zh: 最近状态与不适
+            en: Recent discomfort guidance
+        - value: gifting
+          label:
+            zh: 送礼挑选
+            en: Gifting
+        - value: ingredient_learning
+          label:
+            zh: 想了解原料
+            en: Ingredient learning
+        - value: article_recommendation
+          label:
+            zh: 想看文章内容
+            en: Article recommendation
+    - name: recent_discomfort_multi
+      type: multi
+      required: false
+      full_width: true
+      label:
+        zh: 最近更明显的状态
+        en: What feels most noticeable lately
+      importance:
+        default: 5
+      show_if:
+        use_case: recent_discomfort_guidance
+      options:
+        - value: fatigue
+          label:
+            zh: 容易累、恢复慢
+            en: Fatigue and slow recovery
+        - value: dryness_after_late_nights
+          label:
+            zh: 熬夜后口干、偏燥
+            en: Dryness after late nights
+        - value: heavy_after_meals
+          label:
+            zh: 饭后困、身体沉
+            en: Heavy after meals
+        - value: mood_tension
+          label:
+            zh: 郁闷、紧绷、想放松一点
+            en: Mood tension and wanting to unwind
+    - name: free_text_recent_discomfort
+      type: text
+      required: false
+      full_width: true
+      label:
+        zh: 还有什么想补充
+        en: Anything else you want to add
+      show_if:
+        use_case:
+          - daily_wellness
+          - recent_discomfort_guidance
+          - gifting
+          - ingredient_learning
+          - article_recommendation

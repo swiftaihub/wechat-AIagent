@@ -1,0 +1,34 @@
+blocked_medical_diagnosis_patterns:
+  - "(诊断|确诊|which disease)"
+
+blocked_treatment_promise_patterns:
+  - "(治疗|治愈|treat this)"
+
+blocked_cure_patterns:
+  - "(根治|cure)"
+
+blocked_replacement_of_care_patterns:
+  - "(不用看医生|replace your doctor)"
+
+high_risk_patterns:
+  - id: chest_pain_breathing
+    patterns: ["胸痛", "呼吸困难", "breathing difficulty"]
+    message:
+      zh: 这类情况不适合继续线上选茶，请尽快就医。
+      en: This is not appropriate for tea guidance. Please seek urgent medical care.
+
+caution_patterns:
+  - id: pregnancy
+    patterns: ["怀孕", "pregnan"]
+    message:
+      zh: 孕期或特殊阶段请先和医生确认。
+      en: During pregnancy or a sensitive life stage, please confirm with a clinician first.
+
+allowed_educational_claims: [适合做日常调养参考, often used in]
+disallowed_medical_claims: [治疗, cure, diagnosis]
+compliant_phrasing: []
+safer_rewrite_examples: []
+fallback_responses:
+  high_risk:
+    zh: 这类情况不适合继续线上选茶，请尽快就医。
+    en: This is not appropriate for tea guidance. Please seek urgent medical care.

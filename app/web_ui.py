@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 from app.llm_core import generate_reply
+from app.product_helper.intake import build_visible_intake_payload
 from app.tools.constitution_advice import (
     extract_recent_discomfort_options,
 )
@@ -32,7 +33,7 @@ WEB_UI_ERROR_TEXT = os.getenv(
 )
 WEBUI_INTAKE_CONFIG_PATH = os.getenv(
     "WEBUI_INTAKE_CONFIG_PATH",
-    "config/questionaire.private.yaml",
+    "config/questionnaire.private.yaml",
 ).strip()
 
 
@@ -60,13 +61,13 @@ def _load_localized_runtime_text(
 
 WEBUI_WELCOME_MESSAGE = _load_localized_runtime_text(
     "WEBUI_WELCOME_MESSAGE",
-    default_zh="欢迎使用健康咨询助手。请告诉我您的情况，我将提供实用的健康指导。",
-    default_en="Welcome. Tell me your situation and I will provide practical wellness guidance.",
+    default_zh="欢迎来到品牌 AI Helper。你可以告诉我最近的状态、送礼方向，或想先了解哪类草本茶。",
+    default_en="Welcome to the brand AI helper. Share how you have been feeling, what you might want to gift, or the tea direction you want to explore.",
 )
 WEBUI_TITLE = _load_localized_runtime_text(
     "WEBUI_TITLE",
-    default_zh="健康咨询助手",
-    default_en="Health Guidance Assistant",
+    default_zh="草本茶推荐助手",
+    default_en="Herbal Tea Recommendation Helper",
 )
 
 
@@ -99,14 +100,14 @@ def _default_intake_config() -> dict[str, Any]:
         "auto_collapse_on_submit": True,
         "title": {"zh": "基础信息快速采集", "en": "Quick intake"},
         "description": {
-            "zh": "可快速点选并提交，系统会将信息结构化发送给 AI。",
-            "en": "Quickly select baseline information and submit to AI.",
+            "zh": "先给 AI 一个大致方向，它会更容易把产品、原料和文章推荐收得更准。",
+            "en": "Give the assistant a little context first so it can narrow products, ingredients, and articles more clearly.",
         },
         "submit_button": {"zh": "提交", "en": "Submit"},
         "reset_button": {"zh": "重置", "en": "Reset"},
         "submit_notice": {
-            "zh": "基础信息已提交，正在生成个性化健康评估，请稍候。",
-            "en": "Information submitted. Generating your personalized wellness assessment...",
+            "zh": "基础信息已提交，正在整理更贴近你的推荐方向。",
+            "en": "Information submitted. Shaping a more tailored recommendation path now.",
         },
         "fields": [],
     }
@@ -224,7 +225,7 @@ def _load_intake_config_from_path(config_path: str | Path | None) -> dict[str, A
         )
         return fallback
 
-    intake = loaded_data.get("constitution_scoring_intake", loaded_data)
+    intake = loaded_data.get("questionnaire") or loaded_data.get("constitution_scoring_intake", loaded_data)
     if not isinstance(intake, dict):
         logger.warning("Invalid intake config structure in %s; intake disabled", loaded_path)
         return fallback
@@ -280,44 +281,7 @@ def _build_intake_payload_from_state(
     intake_state: dict[str, Any],
     intake_fields: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    payload: dict[str, Any] = {
-        "age": "",
-        "gender": "",
-        "sleep": [],
-        "diet": [],
-        "bowel": [],
-        "emotion": [],
-        "exercise": "",
-        "recent_discomfort": "",
-        "recent_discomfort_choice": "",
-        "recent_discomfort_text": "",
-    }
-    field_names = {
-        str(field.get("name", "")).strip()
-        for field in intake_fields
-        if isinstance(field, dict) and str(field.get("name", "")).strip()
-    }
-
-    for key in tuple(payload):
-        value = intake_state.get(key)
-        if isinstance(value, list):
-            payload[key] = value
-        elif isinstance(value, str):
-            payload[key] = value.strip()
-
-    recent_parts: list[str] = []
-    for key in ("recent_discomfort", "recent_discomfort_choice", "recent_discomfort_text"):
-        value = str(payload.get(key, "")).strip()
-        if value and value not in recent_parts:
-            recent_parts.append(value)
-    payload["recent_discomfort"] = "\n".join(recent_parts)
-
-    if "recent_discomfort_choice" not in field_names and not payload["recent_discomfort_choice"]:
-        payload.pop("recent_discomfort_choice")
-    if "recent_discomfort_text" not in field_names and not payload["recent_discomfort_text"]:
-        payload.pop("recent_discomfort_text")
-
-    return payload
+    return build_visible_intake_payload(intake_state, intake_fields)
 
 
 INTAKE_CONFIG = _load_intake_config()

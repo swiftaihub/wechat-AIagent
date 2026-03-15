@@ -1,0 +1,1055 @@
+[
+  {
+    "slug": "zaoxi-vitality-tea",
+    "name": {
+      "zh": "枣曦元气茶",
+      "en": "Red Date Dawn Vitality Tea"
+    },
+    "tagline": {
+      "zh": "微甜回甘，适合疲劳气短时日常轻补",
+      "en": "A gently sweet daily tonic for fatigue and low energy"
+    },
+    "category": "herbal-tea",
+    "price": 32.9,
+    "currency": "USD",
+    "size": "15 sachets",
+    "summary": {
+      "zh": "以黄芪、红枣、枸杞、少量陈皮调配，兼顾补气与口感层次",
+      "en": "Crafted with astragalus, red date, goji berry, and a touch of aged citrus peel"
+    },
+    "ingredients": [
+      "astragalus",
+      "red-date",
+      "goji",
+      "chenpi"
+    ],
+    "benefit_tags": [
+      "qi-support",
+      "daily-wellness",
+      "gently-sweet",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "枣香",
+        "微甜",
+        "回甘"
+      ],
+      "en": [
+        "date-like sweetness",
+        "gently sweet",
+        "pleasant aftertaste"
+      ]
+    },
+    "brew_guide": {
+      "zh": "黄芪6-8g、红枣2枚掰开、枸杞8g、陈皮1g；95°C热水焖泡15分钟，可续水2-3次",
+      "en": "Use 6-8g astragalus, 2 split red dates, 8g goji, and 1g chenpi; steep in 95°C water for 15 minutes and refill 2-3 times"
+    },
+    "constitution_types": [
+      "气虚",
+      "气血两虚"
+    ],
+    "recent_discomforts": [
+      "易疲劳",
+      "气短",
+      "说话无力",
+      "午后疲倦",
+      "恢复慢"
+    ],
+    "target_users": {
+      "zh": [
+        "容易累、恢复慢的人",
+        "想喝不太苦补气茶的人"
+      ],
+      "en": [
+        "people with low energy and slow recovery",
+        "users who want a mild tonic tea"
+      ]
+    },
+    "cautions": {
+      "zh": "感冒发热、口干便秘明显或上火时暂停。",
+      "en": "Avoid during fever, acute infection, or obvious heat signs such as constipation and dry mouth."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/huangqi-red-date-goji-energy-tea/main.jpg",
+      "/images/products/huangqi-red-date-goji-energy-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/huangqi-red-date-goji-energy-tea",
+    "status": "active"
+  },
+  {
+    "slug": "citrus-cloud-harmony-tea",
+    "name": {
+      "zh": "云柑轻和茶",
+      "en": "Citrus Cloud Harmony Tea"
+    },
+    "tagline": {
+      "zh": "补而不腻，适合疲劳伴餐后困胀",
+      "en": "Light and balanced for low energy with post-meal heaviness"
+    },
+    "category": "herbal-tea",
+    "price": 34.9,
+    "currency": "USD",
+    "size": "15 sachets",
+    "summary": {
+      "zh": "以黄芪、陈皮、茯苓、少量红枣搭配，走轻补健脾路线",
+      "en": "A light spleen-support blend with astragalus, chenpi, poria, and a touch of red date"
+    },
+    "ingredients": [
+      "astragalus",
+      "chenpi",
+      "poria",
+      "red-date"
+    ],
+    "benefit_tags": [
+      "qi-support",
+      "spleen-support",
+      "light-body",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "清香",
+        "微甜",
+        "柑橘木香"
+      ],
+      "en": [
+        "light aroma",
+        "gently sweet",
+        "citrus-woody"
+      ]
+    },
+    "brew_guide": {
+      "zh": "黄芪6g、陈皮1-2g、茯苓6g、红枣1-2枚；95°C热水焖泡15-20分钟",
+      "en": "Use 6g astragalus, 1-2g chenpi, 6g poria, and 1-2 red dates; steep in 95°C water for 15-20 minutes"
+    },
+    "constitution_types": [
+      "气虚",
+      "痰湿"
+    ],
+    "recent_discomforts": [
+      "食欲差",
+      "餐后困倦",
+      "身体困重",
+      "胃口弱",
+      "轻度腹胀"
+    ],
+    "target_users": {
+      "zh": [
+        "容易乏力又吃完犯困的人",
+        "想减少补药甜腻感的人"
+      ],
+      "en": [
+        "people who feel tired and heavy after meals",
+        "users who prefer a lighter tonic profile"
+      ]
+    },
+    "cautions": {
+      "zh": "口干舌燥明显、阴虚火旺或便秘时减量。",
+      "en": "Reduce or avoid if you have marked dryness, heat signs, or constipation."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/huangqi-chenpi-poria-light-qi-tea/main.jpg",
+      "/images/products/huangqi-chenpi-poria-light-qi-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/huangqi-chenpi-poria-light-qi-tea",
+    "status": "active"
+  },
+  {
+    "slug": "rosy-glow-nourish-tea",
+    "name": {
+      "zh": "绯颜温养茶",
+      "en": "Rosy Glow Nourish Tea"
+    },
+    "tagline": {
+      "zh": "香甜顺口，适合气血不足时温和调养",
+      "en": "Sweet and comforting for gentle daily blood nourishment"
+    },
+    "category": "herbal-tea",
+    "price": 35.9,
+    "currency": "USD",
+    "size": "15 sachets",
+    "summary": {
+      "zh": "以桂圆、红枣、枸杞为主，适合做大众接受度高的甜润型养生茶",
+      "en": "A naturally sweet blend of longan, red dates, and goji for everyday nourishment"
+    },
+    "ingredients": [
+      "longan",
+      "red-date",
+      "goji"
+    ],
+    "benefit_tags": [
+      "blood-support",
+      "gently-warming",
+      "sweet-profile",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "清甜",
+        "果香",
+        "温润"
+      ],
+      "en": [
+        "naturally sweet",
+        "fruity",
+        "comforting"
+      ]
+    },
+    "brew_guide": {
+      "zh": "桂圆肉4-5颗、红枣2枚掰开、枸杞8g；90-95°C热水焖泡12-15分钟",
+      "en": "Use 4-5 longans, 2 split red dates, and 8g goji; steep in 90-95°C water for 12-15 minutes"
+    },
+    "constitution_types": [
+      "气血两虚",
+      "阳虚"
+    ],
+    "recent_discomforts": [
+      "面色偏淡",
+      "头晕",
+      "心悸",
+      "易疲劳",
+      "手脚偏冷"
+    ],
+    "target_users": {
+      "zh": [
+        "面色偏淡、容易累的人",
+        "喜欢甜润茶饮的人"
+      ],
+      "en": [
+        "people with pale complexion and fatigue",
+        "users who enjoy sweeter wellness teas"
+      ]
+    },
+    "cautions": {
+      "zh": "感冒期间、口干便秘明显、痘痘上火明显者不建议连续饮用。",
+      "en": "Avoid during colds or if you have obvious heat signs such as acne flare, constipation, or marked dryness."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/longan-red-date-goji-blood-tonic-tea/main.jpg",
+      "/images/products/longan-red-date-goji-blood-tonic-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/longan-red-date-goji-blood-tonic-tea",
+    "status": "active"
+  },
+  {
+    "slug": "amber-hearth-warming-tea",
+    "name": {
+      "zh": "琥珀暖胃茶",
+      "en": "Amber Hearth Warming Tea"
+    },
+    "tagline": {
+      "zh": "暖身驱寒，适合怕冷与冷饮后不适",
+      "en": "A warming blend for cold-sensitive digestion and chilly days"
+    },
+    "category": "herbal-tea",
+    "price": 29.9,
+    "currency": "USD",
+    "size": "15 sachets",
+    "summary": {
+      "zh": "以生姜、红枣、陈皮调配，走暖胃顺气型茶饮路线",
+      "en": "Formulated with ginger, red date, and chenpi for a warming digestive profile"
+    },
+    "ingredients": [
+      "ginger",
+      "red-date",
+      "chenpi"
+    ],
+    "benefit_tags": [
+      "warming",
+      "cold-relief",
+      "digestive-comfort",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "辛香",
+        "微甜",
+        "暖感明显"
+      ],
+      "en": [
+        "spicy-aromatic",
+        "lightly sweet",
+        "warming"
+      ]
+    },
+    "brew_guide": {
+      "zh": "生姜2-3片、红枣2枚掰开、陈皮1g；95°C热水焖泡10-12分钟",
+      "en": "Use 2-3 ginger slices, 2 split red dates, and 1g chenpi; steep in 95°C water for 10-12 minutes"
+    },
+    "constitution_types": [
+      "阳虚",
+      "气滞"
+    ],
+    "recent_discomforts": [
+      "手脚冰凉",
+      "畏寒",
+      "吃冷易拉",
+      "胃寒不适",
+      "餐后胀气"
+    ],
+    "target_users": {
+      "zh": [
+        "容易怕冷、胃里发凉的人",
+        "冬季或空调房久坐人群"
+      ],
+      "en": [
+        "people with cold-sensitive stomachs",
+        "users who want a warming daily tea"
+      ]
+    },
+    "cautions": {
+      "zh": "咽痛、口腔溃疡、便秘、痘痘上火明显时暂停。",
+      "en": "Avoid if you have sore throat, mouth ulcers, constipation, or other obvious heat signs."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/ginger-red-date-chenpi-warm-stomach-tea/main.jpg",
+      "/images/products/ginger-red-date-chenpi-warm-stomach-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/ginger-red-date-chenpi-warm-stomach-tea",
+    "status": "active"
+  },
+  {
+    "slug": "dewlight-replenish-tea",
+    "name": {
+      "zh": "清露润元茶",
+      "en": "Dewlight Replenish Tea"
+    },
+    "tagline": {
+      "zh": "清润不燥，适合口干咽燥与虚烦疲倦",
+      "en": "Cooling and moistening for dryness with fatigue"
+    },
+    "category": "herbal-tea",
+    "price": 42.9,
+    "currency": "USD",
+    "size": "12 sachets",
+    "summary": {
+      "zh": "以西洋参片、麦冬、枸杞调配，兼顾气阴两端的轻润养路线",
+      "en": "Crafted with American ginseng, ophiopogon, and goji for gentle qi-yin support"
+    },
+    "ingredients": [
+      "american-ginseng",
+      "maidong",
+      "goji"
+    ],
+    "benefit_tags": [
+      "yin-support",
+      "qi-yin-balance",
+      "dryness-relief",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "微甘",
+        "轻凉",
+        "略带参香"
+      ],
+      "en": [
+        "lightly sweet",
+        "refreshing",
+        "subtle ginseng note"
+      ]
+    },
+    "brew_guide": {
+      "zh": "西洋参2-3g、麦冬5-6g、枸杞6-8g；90°C热水焖泡12-15分钟",
+      "en": "Use 2-3g American ginseng, 5-6g ophiopogon, and 6-8g goji; steep in 90°C water for 12-15 minutes"
+    },
+    "constitution_types": [
+      "阴虚",
+      "气血两虚"
+    ],
+    "recent_discomforts": [
+      "口干咽燥",
+      "睡眠浅",
+      "心烦",
+      "午后疲倦",
+      "用脑后疲惫"
+    ],
+    "target_users": {
+      "zh": [
+        "熬夜后口干虚烦的人",
+        "想要补而不燥的人"
+      ],
+      "en": [
+        "people with dryness and low energy",
+        "users seeking a non-warming restorative tea"
+      ]
+    },
+    "cautions": {
+      "zh": "感冒发热、腹泻、胃寒明显者不宜连续饮用。",
+      "en": "Avoid during colds, fever, loose stools, or obvious cold-type digestive weakness."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/american-ginseng-maidong-goji-moisture-tea/main.jpg",
+      "/images/products/american-ginseng-maidong-goji-moisture-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/american-ginseng-maidong-goji-moisture-tea",
+    "status": "active"
+  },
+  {
+    "slug": "moon-dew-night-restore-tea",
+    "name": {
+      "zh": "月露夜养茶",
+      "en": "Moon Dew Night Restore Tea"
+    },
+    "tagline": {
+      "zh": "温润清甜，适合熬夜后干燥与肤色欠佳",
+      "en": "A softly sweet blend for dryness and late-night recovery"
+    },
+    "category": "herbal-tea",
+    "price": 39.9,
+    "currency": "USD",
+    "size": "15 sachets",
+    "summary": {
+      "zh": "以玉竹、麦冬、枸杞为主，适合做润燥型高接受度茶饮",
+      "en": "Built around solomon's seal, ophiopogon, and goji for a high-acceptance moistening tea"
+    },
+    "ingredients": [
+      "yuzhu",
+      "maidong",
+      "goji"
+    ],
+    "benefit_tags": [
+      "yin-support",
+      "skin-friendly",
+      "night-recovery",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "清甜",
+        "柔和",
+        "润感"
+      ],
+      "en": [
+        "softly sweet",
+        "smooth",
+        "moistening"
+      ]
+    },
+    "brew_guide": {
+      "zh": "玉竹6-8g、麦冬5-6g、枸杞6-8g；90°C热水焖泡15分钟",
+      "en": "Use 6-8g solomon's seal, 5-6g ophiopogon, and 6-8g goji; steep in 90°C water for 15 minutes"
+    },
+    "constitution_types": [
+      "阴虚"
+    ],
+    "recent_discomforts": [
+      "皮肤干燥",
+      "口干",
+      "眼干",
+      "熬夜后肤色差",
+      "便秘偏干"
+    ],
+    "target_users": {
+      "zh": [
+        "熬夜党",
+        "觉得自己偏干、偏燥的人"
+      ],
+      "en": [
+        "night owls",
+        "users prone to dryness and dull complexion"
+      ]
+    },
+    "cautions": {
+      "zh": "脾胃虚寒、便溏、感冒初期不建议连续饮用。",
+      "en": "Not ideal for cold-type digestion, loose stools, or early-stage colds."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/yuzhu-maidong-goji-night-recovery-tea/main.jpg",
+      "/images/products/yuzhu-maidong-goji-night-recovery-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/yuzhu-maidong-goji-night-recovery-tea",
+    "status": "active"
+  },
+  {
+    "slug": "golden-bloom-clear-gaze-tea",
+    "name": {
+      "zh": "金菊清眸茶",
+      "en": "Golden Bloom Clear Gaze Tea"
+    },
+    "tagline": {
+      "zh": "花香清爽，适合久看屏幕与轻度上火",
+      "en": "A refreshing floral blend for screen fatigue and mild heat"
+    },
+    "category": "herbal-tea",
+    "price": 28.9,
+    "currency": "USD",
+    "size": "15 sachets",
+    "summary": {
+      "zh": "以枸杞、菊花调配，定位为大众接受度高的清润明目茶",
+      "en": "A classic, high-acceptance blend of goji and chrysanthemum for daily eye comfort"
+    },
+    "ingredients": [
+      "goji",
+      "chrysanthemum"
+    ],
+    "benefit_tags": [
+      "eye-comfort",
+      "light-cooling",
+      "daily-wellness",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "花香",
+        "清爽",
+        "微甘"
+      ],
+      "en": [
+        "floral",
+        "refreshing",
+        "lightly sweet"
+      ]
+    },
+    "brew_guide": {
+      "zh": "菊花3-4朵、枸杞6-8g；85-90°C热水冲泡5-7分钟，现泡现饮",
+      "en": "Use 3-4 chrysanthemum flowers and 6-8g goji; steep in 85-90°C water for 5-7 minutes and drink fresh"
+    },
+    "constitution_types": [
+      "阴虚",
+      "湿热"
+    ],
+    "recent_discomforts": [
+      "眼干",
+      "用眼疲劳",
+      "熬夜后眼涩",
+      "轻度口干",
+      "头目不清爽"
+    ],
+    "target_users": {
+      "zh": [
+        "电脑工作者",
+        "喜欢清爽花草茶的人"
+      ],
+      "en": [
+        "screen-heavy workers",
+        "users who enjoy refreshing floral teas"
+      ]
+    },
+    "cautions": {
+      "zh": "脾胃虚寒、容易腹泻者不宜长期大量饮用。",
+      "en": "Avoid long-term heavy use if you are cold-sensitive or prone to loose stools."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/goji-chrysanthemum-eye-comfort-tea/main.jpg",
+      "/images/products/goji-chrysanthemum-eye-comfort-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/goji-chrysanthemum-eye-comfort-tea",
+    "status": "active"
+  },
+  {
+    "slug": "golden-dew-balance-tea",
+    "name": {
+      "zh": "金露清衡茶",
+      "en": "Golden Dew Balance Tea"
+    },
+    "tagline": {
+      "zh": "清新偏凉，适合口苦痘多与面部出油",
+      "en": "A cooling floral blend for damp-heat discomfort and oiliness"
+    },
+    "category": "herbal-tea",
+    "price": 31.9,
+    "currency": "USD",
+    "size": "15 sachets",
+    "summary": {
+      "zh": "以金银花、菊花、少量枸杞调配，兼顾清爽口感与花香层次",
+      "en": "A balanced blend of honeysuckle, chrysanthemum, and a touch of goji"
+    },
+    "ingredients": [
+      "honeysuckle",
+      "chrysanthemum",
+      "goji"
+    ],
+    "benefit_tags": [
+      "cooling",
+      "damp-heat-balance",
+      "floral",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "清花香",
+        "微甘",
+        "偏凉爽"
+      ],
+      "en": [
+        "clean floral",
+        "lightly sweet",
+        "cooling"
+      ]
+    },
+    "brew_guide": {
+      "zh": "金银花4-6g、菊花3-4朵、枸杞4-6g；85-90°C热水冲泡8-10分钟",
+      "en": "Use 4-6g honeysuckle, 3-4 chrysanthemum flowers, and 4-6g goji; steep in 85-90°C water for 8-10 minutes"
+    },
+    "constitution_types": [
+      "湿热"
+    ],
+    "recent_discomforts": [
+      "口苦",
+      "口臭",
+      "痘痘多",
+      "小便黄",
+      "面部出油"
+    ],
+    "target_users": {
+      "zh": [
+        "觉得自己偏热、偏油的人",
+        "喜欢清爽型花茶的人"
+      ],
+      "en": [
+        "users with heat/oiliness discomfort",
+        "people who prefer cooling floral teas"
+      ]
+    },
+    "cautions": {
+      "zh": "脾胃虚寒、食少泄泻、孕期人群慎用或减量。",
+      "en": "Use cautiously or reduce dose if you have cold digestion, low appetite with diarrhea, or are pregnant."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/honeysuckle-chrysanthemum-cool-balance-tea/main.jpg",
+      "/images/products/honeysuckle-chrysanthemum-cool-balance-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/honeysuckle-chrysanthemum-cool-balance-tea",
+    "status": "active"
+  },
+  {
+    "slug": "citrus-rose-ease-tea",
+    "name": {
+      "zh": "花柑舒心茶",
+      "en": "Citrus Rose Ease Tea"
+    },
+    "tagline": {
+      "zh": "花香柑橘调，适合情绪郁结与饭后胀气",
+      "en": "A citrus-floral blend for tension, sighing, and digestive stagnation"
+    },
+    "category": "herbal-tea",
+    "price": 33.9,
+    "currency": "USD",
+    "size": "15 sachets",
+    "summary": {
+      "zh": "以玫瑰花、陈皮、佛手搭配，适合作为情绪与脾胃双向轻调茶饮",
+      "en": "A floral-citrus formula with rose, chenpi, and buddha's hand for mood and digestive ease"
+    },
+    "ingredients": [
+      "rose",
+      "chenpi",
+      "fo-shou"
+    ],
+    "benefit_tags": [
+      "qi-move",
+      "mood-support",
+      "digestive-comfort",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "花香",
+        "柑橘香",
+        "微微苦香"
+      ],
+      "en": [
+        "floral",
+        "citrusy",
+        "lightly bittersweet"
+      ]
+    },
+    "brew_guide": {
+      "zh": "玫瑰花4-5朵、陈皮1g、佛手3-4g；90°C热水焖泡10分钟",
+      "en": "Use 4-5 rose buds, 1g chenpi, and 3-4g buddha's hand; steep in 90°C water for 10 minutes"
+    },
+    "constitution_types": [
+      "气滞"
+    ],
+    "recent_discomforts": [
+      "胸闷",
+      "爱叹气",
+      "情绪压抑",
+      "胃口受影响",
+      "腹胀嗳气"
+    ],
+    "target_users": {
+      "zh": [
+        "压力大、情绪紧的人",
+        "经常情绪一来就胃胀的人"
+      ],
+      "en": [
+        "people under stress",
+        "users whose digestion worsens with emotions"
+      ]
+    },
+    "cautions": {
+      "zh": "孕期、月经过多、胃酸反流明显者慎用。",
+      "en": "Use cautiously during pregnancy, heavy menstrual bleeding, or significant acid reflux."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/rose-chenpi-fo-shou-mood-ease-tea/main.jpg",
+      "/images/products/rose-chenpi-fo-shou-mood-ease-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/rose-chenpi-fo-shou-mood-ease-tea",
+    "status": "active"
+  },
+  {
+    "slug": "amber-orchard-digest-tea",
+    "name": {
+      "zh": "果岚轻醒茶",
+      "en": "Amber Orchard Digest Tea"
+    },
+    "tagline": {
+      "zh": "酸香轻盈，适合餐后腹胀与容易积食",
+      "en": "A tangy-light blend for bloating and food stagnation"
+    },
+    "category": "herbal-tea",
+    "price": 30.9,
+    "currency": "USD",
+    "size": "15 sachets",
+    "summary": {
+      "zh": "以山楂、陈皮、茯苓调配，适合做饭后场景型功能茶",
+      "en": "Designed as an after-meal functional tea with hawthorn, chenpi, and poria"
+    },
+    "ingredients": [
+      "hawthorn",
+      "chenpi",
+      "poria"
+    ],
+    "benefit_tags": [
+      "post-meal",
+      "digestive-comfort",
+      "light-body",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "酸甜",
+        "柑橘香",
+        "轻爽"
+      ],
+      "en": [
+        "tangy-sweet",
+        "citrusy",
+        "light"
+      ]
+    },
+    "brew_guide": {
+      "zh": "山楂6-8g、陈皮1g、茯苓6g；95°C热水焖泡12-15分钟，建议饭后饮用",
+      "en": "Use 6-8g hawthorn, 1g chenpi, and 6g poria; steep in 95°C water for 12-15 minutes and drink after meals"
+    },
+    "constitution_types": [
+      "痰湿",
+      "气滞"
+    ],
+    "recent_discomforts": [
+      "容易积食",
+      "餐后腹胀",
+      "嗳气",
+      "食欲不振",
+      "身体困重"
+    ],
+    "target_users": {
+      "zh": [
+        "饭后容易胀的人",
+        "喜欢偏酸口感功能茶的人"
+      ],
+      "en": [
+        "people who bloat after meals",
+        "users who enjoy tangy wellness teas"
+      ]
+    },
+    "cautions": {
+      "zh": "胃酸多、胃溃疡、空腹时不建议饮用。",
+      "en": "Avoid on an empty stomach or if you have reflux, high stomach acid, or ulcers."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/hawthorn-chenpi-poria-digest-tea/main.jpg",
+      "/images/products/hawthorn-chenpi-poria-digest-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/hawthorn-chenpi-poria-digest-tea",
+    "status": "active"
+  },
+  {
+    "slug": "amber-silk-restore-tea",
+    "name": {
+      "zh": "琥珀修元茶",
+      "en": "Amber Silk Restore Tea"
+    },
+    "tagline": {
+      "zh": "甘润平和，适合久劳后恢复慢与轻度脑雾",
+      "en": "Smooth and restorative for overwork and slow recovery"
+    },
+    "category": "herbal-tea",
+    "price": 38.9,
+    "currency": "USD",
+    "size": "12 sachets",
+    "summary": {
+      "zh": "以黄精、枸杞、少量红枣调配，适合做偏平和的恢复型茶饮",
+      "en": "A restorative blend of polygonatum, goji, and a touch of red date"
+    },
+    "ingredients": [
+      "huangjing",
+      "goji",
+      "red-date"
+    ],
+    "benefit_tags": [
+      "restorative",
+      "gentle-tonic",
+      "overwork-support",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "甘润",
+        "柔和",
+        "微甜"
+      ],
+      "en": [
+        "smooth",
+        "soft",
+        "lightly sweet"
+      ]
+    },
+    "brew_guide": {
+      "zh": "黄精6-8g、枸杞6-8g、红枣1枚掰开；90°C热水焖泡15分钟",
+      "en": "Use 6-8g polygonatum, 6-8g goji, and 1 split red date; steep in 90°C water for 15 minutes"
+    },
+    "constitution_types": [
+      "气虚",
+      "阴虚",
+      "气血两虚"
+    ],
+    "recent_discomforts": [
+      "长期过劳",
+      "脑雾",
+      "体力恢复慢",
+      "口干食少",
+      "轻度乏力"
+    ],
+    "target_users": {
+      "zh": [
+        "连续加班、恢复慢的人",
+        "想要更平和补益感的人"
+      ],
+      "en": [
+        "people recovering from overwork",
+        "users wanting a gentler tonic profile"
+      ]
+    },
+    "cautions": {
+      "zh": "痰湿偏重、腹胀明显、便溏者不宜长期连续使用。",
+      "en": "Not ideal for long continuous use if you have obvious dampness, bloating, or loose stools."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/huangjing-goji-restorative-tea/main.jpg",
+      "/images/products/huangjing-goji-restorative-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/huangjing-goji-restorative-tea",
+    "status": "active"
+  },
+  {
+    "slug": "crimson-gold-radiance-tea",
+    "name": {
+      "zh": "绯金焕采茶",
+      "en": "Crimson Gold Radiance Tea"
+    },
+    "tagline": {
+      "zh": "花香高级，适合循环差与气色暗沉人群",
+      "en": "A premium floral blend for circulation support and glow-focused wellness"
+    },
+    "category": "herbal-tea",
+    "price": 69.9,
+    "currency": "USD",
+    "size": "10 sachets",
+    "summary": {
+      "zh": "以藏红花、枸杞、玫瑰花调配，适合作为高端焕活型茶饮",
+      "en": "A premium blend of saffron, goji, and rose designed for circulation-focused rituals"
+    },
+    "ingredients": [
+      "saffron",
+      "goji",
+      "rose"
+    ],
+    "benefit_tags": [
+      "circulation-support",
+      "beauty-wellness",
+      "premium",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "花香",
+        "微甘",
+        "高雅辛香"
+      ],
+      "en": [
+        "floral",
+        "lightly sweet",
+        "luxurious aromatic spice"
+      ]
+    },
+    "brew_guide": {
+      "zh": "藏红花5-8根、枸杞6g、玫瑰花3-4朵；85-90°C热水焖泡8-10分钟",
+      "en": "Use 5-8 saffron threads, 6g goji, and 3-4 rose buds; steep in 85-90°C water for 8-10 minutes"
+    },
+    "constitution_types": [
+      "血瘀"
+    ],
+    "recent_discomforts": [
+      "循环差",
+      "面色暗淡",
+      "经血有块",
+      "容易瘀青",
+      "刺痛固定"
+    ],
+    "target_users": {
+      "zh": [
+        "重视气色与仪式感的人",
+        "偏向高端花草茶消费人群"
+      ],
+      "en": [
+        "users focused on complexion and ritual",
+        "premium herbal tea consumers"
+      ]
+    },
+    "cautions": {
+      "zh": "孕期、经量过多、出血倾向或正在用抗凝药者慎用或禁用。",
+      "en": "Avoid during pregnancy, heavy menstrual bleeding, bleeding disorders, or while using anticoagulants."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/saffron-goji-rose-circulation-tea/main.jpg",
+      "/images/products/saffron-goji-rose-circulation-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/saffron-goji-rose-circulation-tea",
+    "status": "active"
+  },
+  {
+    "slug": "gilded-cordyceps-reserve-tea",
+    "name": {
+      "zh": "鎏金虫草御元茶",
+      "en": "Gilded Cordyceps Reserve Tea"
+    },
+    "tagline": {
+      "zh": "甘润参香，适合久劳体虚、气短易疲与恢复慢时的高阶滋养",
+      "en": "A luxuriously smooth cordyceps blend for fatigue, low stamina, and refined daily restoration"
+    },
+    "category": "herbal-tea",
+    "price": 96.9,
+    "currency": "USD",
+    "size": "8 sachets",
+    "summary": {
+      "zh": "以冬虫夏草为核心，配伍西洋参、黄精、枸杞，突出高端补养与恢复感，口感甘润细雅，适合作为高价位礼赠与自养型茶饮。",
+      "en": "Built around prized cordyceps and paired with American ginseng, polygonatum, and goji for a premium restorative tea with a smooth, elegant finish."
+    },
+    "ingredients": [
+      "cordyceps",
+      "american-ginseng",
+      "huangjing",
+      "goji"
+    ],
+    "benefit_tags": [
+      "premium",
+      "restorative",
+      "breath-support",
+      "caffeine-free"
+    ],
+    "flavor_notes": {
+      "zh": [
+        "甘润",
+        "淡参香",
+        "琥珀回甘"
+      ],
+      "en": [
+        "smooth",
+        "subtle ginseng aroma",
+        "amber-like sweetness"
+      ]
+    },
+    "brew_guide": {
+      "zh": "冬虫夏草2-3g、西洋参2g、黄精4-6g、枸杞6g；90-95°C热水焖泡15分钟，可续水2-3次。",
+      "en": "Use 2-3g cordyceps, 2g American ginseng, 4-6g polygonatum, and 6g goji; steep in 90-95°C water for 15 minutes and refill 2-3 times."
+    },
+    "constitution_types": [
+      "气虚",
+      "阳虚",
+      "气血两虚"
+    ],
+    "recent_discomforts": [
+      "易疲劳",
+      "气短",
+      "恢复慢",
+      "说话无力",
+      "久劳后虚弱感"
+    ],
+    "target_users": {
+      "zh": [
+        "长期加班、讲求高端养护的人",
+        "想要补而不俗、适合送礼的消费人群"
+      ],
+      "en": [
+        "people recovering from long hours and overexertion",
+        "premium wellness consumers seeking a refined giftable tonic tea"
+      ]
+    },
+    "cautions": {
+      "zh": "感冒发热、急性炎症、明显上火或消化不适期间暂停；孕期、慢性病管理期或正在服药者建议先咨询专业人士。",
+      "en": "Avoid during fever, acute infection, obvious heat signs, or digestive discomfort. If pregnant, managing a chronic condition, or taking medication, consult a qualified professional first."
+    },
+    "disclaimer": {
+      "zh": "本产品为日常饮品，不替代医疗建议。",
+      "en": "This product is a daily wellness beverage and not medical advice."
+    },
+    "images": [
+      "/images/products/cordyceps-ginseng-polygonatum-premium-tea/main.jpg",
+      "/images/products/cordyceps-ginseng-polygonatum-premium-tea/lifestyle-1.jpg"
+    ],
+    "buy_link": "https://your-store.com/products/cordyceps-ginseng-polygonatum-premium-tea",
+    "status": "active"
+  }
+]
