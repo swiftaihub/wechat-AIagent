@@ -60,6 +60,25 @@ class LlmCoreOrchestrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("cure", reply.lower())
         self.assertTrue(any(name in reply for name in ("Red Date Dawn Vitality Tea", "Amber Silk Restore Tea", "Citrus Cloud Harmony Tea")))
 
+    async def test_force_naturalization_calls_llm_for_normal_reply(self) -> None:
+        stub = _StubService(reply="Deterministic draft reply.")
+
+        with patch.dict(os.environ, {"OPENCLAW_FORCE_NATURALIZATION": "1"}, clear=False):
+            reset_runtime_config_cache()
+            reset_usage_guard_cache()
+            with (
+                patch("app.llm_core.get_product_helper_service", return_value=stub),
+                patch("app.llm_core.llm_chat", new=AsyncMock(return_value="Naturalized final reply.")),
+            ):
+                reply = await generate_reply(
+                    user_id="force-naturalize",
+                    text="Tell me more about this tea.",
+                    preferred_language="en",
+                    channel="web",
+                )
+
+        self.assertEqual(reply, "Naturalized final reply.")
+
     async def test_generate_reply_result_returns_structured_block_for_oversized_input(self) -> None:
         long_text = "A" * 5000
 
