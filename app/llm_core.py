@@ -85,6 +85,24 @@ def _naturalization_enabled() -> bool:
     return _env_bool("OPENCLAW_NATURALIZE_ENABLED", False)
 
 
+def _force_naturalization_enabled() -> bool:
+    return _env_bool("OPENCLAW_FORCE_NATURALIZATION", False)
+
+
+def _naturalization_requested() -> bool:
+    return _naturalization_enabled() or _force_naturalization_enabled()
+
+
+def _should_force_naturalization(result) -> bool:
+    if not _force_naturalization_enabled():
+        return False
+    if result.intent in {"high_risk_medical", "out_of_scope"}:
+        return False
+    if result.mode in {"fallback_safe", "intake_followup"}:
+        return False
+    return bool(str(result.reply or "").strip())
+
+
 def _trim_to_channel_limit(text: str, channel: str) -> str:
     limits = load_runtime_limits_config()
     channel_name = "wechat" if channel == "wechat" else "web"
@@ -109,9 +127,9 @@ def _trim_history_context(history_text: str) -> str:
 
 
 async def _maybe_naturalize_reply(*, user_id: str, user_text: str, result, channel: str) -> str:
-    if not _naturalization_enabled():
+    if not _naturalization_requested():
         return result.reply
-    if not bool(result.metadata.get("allow_naturalization", False)):
+    if not bool(result.metadata.get("allow_naturalization", False)) and not _should_force_naturalization(result):
         return result.reply
 
     runtime = get_prompt_runtime()
