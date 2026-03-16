@@ -126,63 +126,75 @@ def select_supporting_links(
     mentioned_ingredients: tuple[str, ...],
 ) -> tuple[LinkEntry, ...]:
     entries = build_link_entries(bundle, config, language)
-    max_links = int(config.selection_rules.get("max_links_default", 2) or 2)
+    default_max_links = int(config.selection_rules.get("max_links_default", 2) or 2)
+    max_links = 1 if intent in {"product_detail", "ingredient_explanation", "article_request", "wellness_education_in_scope", "brewing_or_usage_question", "general_brand_scope_qna"} else default_max_links
     selected: list[LinkEntry] = []
+    seen_ids: set[str] = set()
     recommendation_slugs = [item.product.slug for item in product_recommendations]
+    entry_by_key = {(entry.type, entry.slug): entry for entry in entries}
 
-    if intent in {"product_recommendation_direct", "symptom_or_discomfort_guidance", "gifting_recommendation", "compare_products"}:
+    def append_entry(entry: LinkEntry | None) -> None:
+        if entry is None or entry.id in seen_ids:
+            return
+        seen_ids.add(entry.id)
+        selected.append(entry)
+
+    def append_product_slugs(slugs: tuple[str, ...] | list[str]) -> None:
+        for slug in slugs:
+            append_entry(entry_by_key.get(("product", slug)))
+
+    def append_ingredient_slugs(slugs: tuple[str, ...] | list[str]) -> None:
+        for slug in slugs:
+            append_entry(entry_by_key.get(("ingredient", slug)))
+
+    def best_article() -> LinkEntry | None:
+        article_candidates: list[tuple[int, LinkEntry]] = []
+        mentioned_product_set = set(mentioned_products)
+        mentioned_ingredient_set = set(mentioned_ingredients)
+        recommendation_set = set(recommendation_slugs)
         for entry in entries:
-            if entry.type == "product" and entry.slug in (tuple(recommendation_slugs) + tuple(mentioned_products)):
-                selected.append(entry)
+            if entry.type != "article":
+                continue
+            score = entry.priority
+            if set(entry.related_products) & mentioned_product_set:
+                score += 50
+            if set(entry.related_ingredients) & mentioned_ingredient_set:
+                score += 50
+            if set(entry.related_products) & recommendation_set:
+                score += 20
+            if use_case and use_case in entry.use_cases:
+                score += 8
+            if score > entry.priority:
+                article_candidates.append((score, entry))
+        if not article_candidates:
+            return None
+        article_candidates.sort(key=lambda item: item[0], reverse=True)
+        return article_candidates[0][1]
+
+    if intent == "compare_products":
+        append_product_slugs(mentioned_products)
+        append_product_slugs(recommendation_slugs)
+
+    if intent == "product_detail":
+        append_product_slugs(mentioned_products or recommendation_slugs)
+
+    if intent in {"product_recommendation_direct", "symptom_or_discomfort_guidance", "gifting_recommendation", "constitution_guidance"}:
+        append_product_slugs(recommendation_slugs)
+        append_product_slugs(mentioned_products)
 
     if intent == "product_catalog_request":
         preferred_collection = "gifting" if use_case == "gifting" else "all"
-        for entry in entries:
-            if entry.type == "collection" and entry.slug == preferred_collection:
-                selected.append(entry)
-                break
-        if not selected:
-            for entry in entries:
-                if entry.type == "collection" and entry.slug == "all":
-                    selected.append(entry)
-                    break
+        append_entry(entry_by_key.get(("collection", preferred_collection)))
+        append_entry(entry_by_key.get(("collection", "all")))
 
     if intent == "ingredient_explanation":
-        for entry in entries:
-            if entry.type == "ingredient" and entry.slug in mentioned_ingredients:
-                selected.append(entry)
-                break
+        append_ingredient_slugs(mentioned_ingredients)
         if not selected and product_recommendations:
             lead = product_recommendations[0].product
             if lead.ingredients:
-                target_slug = lead.ingredients[0]
-                for entry in entries:
-                    if entry.type == "ingredient" and entry.slug == target_slug:
-                        selected.append(entry)
-                        break
+                append_entry(entry_by_key.get(("ingredient", lead.ingredients[0])))
 
-    if intent in {"article_request", "ingredient_explanation", "brewing_or_usage_question", "general_brand_scope_qna"}:
-        article_candidates = [
-            entry
-            for entry in entries
-            if entry.type == "article"
-            and (
-                set(entry.related_products) & set(recommendation_slugs + list(mentioned_products))
-                or set(entry.related_ingredients) & set(mentioned_ingredients)
-                or use_case in entry.use_cases
-            )
-        ]
-        article_candidates.sort(key=lambda item: item.priority, reverse=True)
-        if article_candidates:
-            selected.append(article_candidates[0])
+    if intent in {"article_request", "ingredient_explanation", "brewing_or_usage_question", "general_brand_scope_qna", "wellness_education_in_scope"}:
+        append_entry(best_article())
 
-    deduped: list[LinkEntry] = []
-    seen_ids: set[str] = set()
-    for entry in sorted(selected, key=lambda item: item.priority, reverse=True):
-        if entry.id in seen_ids:
-            continue
-        seen_ids.add(entry.id)
-        deduped.append(entry)
-        if len(deduped) >= max_links:
-            break
-    return tuple(deduped)
+    return tuple(selected[:max_links])
