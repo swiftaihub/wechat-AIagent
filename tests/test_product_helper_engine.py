@@ -131,7 +131,7 @@ class ProductHelperEngineTests(unittest.TestCase):
             text='用户基础信息（product_helper intake）：\n```json\n{"use_case":"ingredient_learning","selected_product_slug":"dewlight-replenish-tea"}\n```',
             channel="web",
         )
-        self.assertEqual(result.intent, "product_ingredient_breakdown")
+        self.assertEqual(result.intent, "product_detail")
         self.assertIn("清露润元茶", result.reply)
         self.assertTrue(any(name in result.reply for name in ("西洋参", "麦冬", "枸杞")))
         self.assertTrue(result.support_links)

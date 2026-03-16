@@ -9,6 +9,7 @@ This repo has been repositioned from a generic TCM advice assistant into a brand
 - selective link routing
 - compliance-aware guardrails
 - short-term session memory
+- Alibaba Cloud Model Studio (`qwen-flash`) for optional controlled naturalization
 
 To make deployment reliable, the repo now also contains a bundled storefront data snapshot in [brand_catalog](/d:/Github/app/wechat-AIagent/wechat-AIagent/brand_catalog). Runtime resolution order is:
 1. explicit env path
@@ -34,7 +35,7 @@ The old herbal-advice-table framing has been replaced with a product-helper arch
 
 - `app/llm_core.py`
   - now routes through the structured product-helper service
-  - still keeps prompt-runtime and guardrail compatibility
+  - applies prompt guardrails, optional LLM naturalization, and channel-aware trimming
 
 - `app/tools/constitution_advice.py`
   - repurposed into a backward-compatible wrapper over the new product-helper engine
@@ -86,36 +87,45 @@ Compatibility note:
 ## Runtime Flow
 
 1. WeChat or web UI sends a message.
-2. `app/llm_core.py` resolves language and runs input guardrails.
+2. `app/llm_core.py` resolves language, enforces centralized rate and quota protections, and runs input guardrails.
 3. `app/product_helper/service.py`:
+   - runs high-risk precheck before intent routing
    - restores short-term session state
    - parses intake payloads or free-text clues
    - routes intent
    - applies high-risk escalation when needed
-   - infers constitution tendencies conservatively
+   - infers constitution tendencies conservatively when needed
    - ranks 1-3 products max
    - picks only the most useful links
-   - renders a concise brand-safe reply
-4. Output is trimmed by runtime limits and prompt guardrails.
-5. Short-term memory is updated for the next turn.
+   - composes a direct-answer-first, brand-safe draft reply
+4. `app/llm_core.py` can optionally run a controlled `tool_final` naturalization pass, then applies output guardrails.
+5. Output is trimmed by channel runtime limits and short-term memory is updated.
 
 ## Local Setup
 
 1. Create `.env` from `.env.example`.
 2. Make sure the sibling repo `herbal_advice_product_demo` exists at the expected location, or override the catalog paths.
-3. Install dependencies:
+3. Set DashScope credentials in `.env`:
+
+```dotenv
+DASHSCOPE_API_KEY=your_model_studio_api_key
+DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+DASHSCOPE_MODEL=qwen-flash
+```
+
+4. Install dependencies:
 
 ```powershell
 .\.venv\Scripts\pip install -r requirements.txt
 ```
 
-4. Start the API:
+5. Start the API:
 
 ```powershell
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8787 --reload
 ```
 
-5. Open the web helper:
+6. Open the web helper:
 
 - `http://127.0.0.1:8787/ui/herbal_advice`
 
@@ -126,6 +136,10 @@ Run the full suite:
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
+
+Optional:
+- Set `OPENCLAW_NATURALIZE_ENABLED=1` to enable the controlled `tool_final` polishing pass through DashScope / Model Studio. If the upstream call fails or violates compliance rules, the runtime falls back to the deterministic draft.
+- Set `REDIS_URL` to enable shared production-grade quota and cooldown storage across multiple app instances. Without Redis, the same protections run with an in-memory fallback inside a single process.
 
 Focused examples:
 
@@ -159,3 +173,5 @@ Legacy files like `app/tools/advice_table.py` remain only as historical scaffold
 - For WeChat, continue using the same `GET /wechat` and `POST /wechat` callback flow.
 - For web embedding, use `WEBUI_BASE_PATH` and `WEBUI_CORS_ALLOWED_ORIGINS` as needed.
 - If you want the helper links to point at a deployed storefront, update `base_url` in `config/link_index.private.yaml`.
+- For production, keep `DASHSCOPE_API_KEY` in your secret manager and leave it out of repo, logs, tests, and screenshots.
+- For production, prefer Redis-backed protection state if you run more than one application process or container.

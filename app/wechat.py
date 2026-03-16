@@ -8,7 +8,8 @@ from wechatpy import create_reply, parse_message
 from wechatpy.exceptions import InvalidSignatureException
 from wechatpy.utils import check_signature
 
-from app.llm_core import generate_reply
+from app.llm_core import generate_reply_result
+from app.logging_utils import hash_identifier
 from app.wechat_token import get_access_token
 
 router = APIRouter()
@@ -90,16 +91,17 @@ async def wechat_message(request: Request, signature: str, timestamp: str, nonce
     from_user = msg.source
 
     try:
-        reply_text = await asyncio.wait_for(
-            generate_reply(user_id=from_user, text=user_text),
+        outcome = await asyncio.wait_for(
+            generate_reply_result(user_id=from_user, text=user_text, channel="wechat"),
             timeout=DEFAULT_REPLY_TIMEOUT_SECONDS,
         )
+        reply_text = outcome.reply
     except Exception as exc:
         if _is_timeout_like_error(exc):
-            logger.warning("OpenClaw sync timeout-like failure for user %s: %s", from_user, exc)
+            logger.warning("WeChat sync timeout-like failure for user_hash=%s error=%s", hash_identifier(from_user), exc)
             reply_text = WECHAT_SYNC_TIMEOUT_TEXT
         else:
-            logger.warning("Failed to generate OpenClaw sync reply for user %s: %s", from_user, exc)
+            logger.warning("Failed to generate WeChat sync reply for user_hash=%s error=%s", hash_identifier(from_user), exc)
             reply_text = WECHAT_SYNC_ERROR_TEXT
 
     reply = create_reply(reply_text, msg)
