@@ -13,6 +13,12 @@ OUT_OF_SCOPE_PATTERNS = (
     "typescript",
     "docker",
     "sql",
+    "coding",
+    "code",
+    "stocks",
+    "investing",
+    "tax",
+    "legal",
     "算法",
     "代码",
     "编程",
@@ -60,11 +66,75 @@ GIFT_HINTS = (
     "for her",
     "girlfriend",
 )
-COMPARE_HINTS = ("区别", "compare", "comparison", "difference", "vs", "哪个好", "差别")
-ARTICLE_HINTS = ("article", "read", "learn more", "文章", "内容", "科普", "想了解更多")
-BREWING_HINTS = ("brew", "brewing", "怎么泡", "什么时候喝", "taste", "口感", "ritual")
-INGREDIENT_HINTS = ("ingredient", "herb", "原料", "成分", "为什么", "搭配", "适合什么样的人")
+COMPARE_HINTS = ("区别", "compare", "comparison", "difference", "vs", "哪个好", "差别", "不同")
+ARTICLE_HINTS = ("article", "read", "learn more", "文章", "内容", "科普", "想了解更多", "看看关于")
+BREWING_HINTS = ("brew", "brewing", "怎么泡", "什么时候喝", "ritual")
+INGREDIENT_HINTS = (
+    "ingredient",
+    "herb",
+    "原料",
+    "成分",
+    "是什么",
+    "为什么",
+    "搭配",
+    "口感会不会",
+    "适合什么样的人",
+)
+PRODUCT_DETAIL_HINTS = (
+    "原材料",
+    "原料",
+    "成分",
+    "配方",
+    "里面都有什么",
+    "里面有什么",
+    "what is in",
+    "what's in",
+    "是什么口感",
+    "什么口感",
+    "喝起来",
+    "taste",
+    "flavor",
+    "口感",
+    "为什么适合",
+    "why it fits",
+    "适合气虚",
+    "适合吗",
+    "送给妈妈吗",
+    "送妈妈合适吗",
+    "什么时候喝",
+    "怎么泡",
+    "brew",
+)
 CONSTITUTION_HINTS = ("体质", "constitution", "偏什么体质", "qi deficiency", "yin deficiency")
+WELLNESS_EDUCATION_TOPICS = (
+    "气虚",
+    "阳虚",
+    "阴虚",
+    "痰湿",
+    "湿热",
+    "气滞",
+    "血瘀",
+    "气血两虚",
+    "constitution",
+    "qi deficiency",
+    "yang deficiency",
+    "yin deficiency",
+    "phlegm-dampness",
+    "damp-heat",
+    "dryness",
+)
+WELLNESS_EDUCATION_VERBS = (
+    "什么关系",
+    "为什么",
+    "是什么",
+    "是什么意思",
+    "why",
+    "what is",
+    "how does",
+    "how is",
+    "relation",
+    "区别",
+)
 PRODUCT_HINTS = ("tea", "product", "recommend", "推荐", "买哪款", "选哪款", "什么茶", "哪种茶", "哪款茶", "喝什么茶", "fit me best")
 PRODUCT_LIST_HINTS = (
     "产品列表",
@@ -99,11 +169,41 @@ def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", str(text or "").strip().lower())
 
 
+def _looks_like_wellness_education(
+    normalized: str,
+    *,
+    has_products: bool,
+    has_ingredients: bool,
+) -> bool:
+    if has_products or has_ingredients:
+        return False
+    if not _contains_any(normalized, WELLNESS_EDUCATION_TOPICS):
+        return False
+    return _contains_any(normalized, WELLNESS_EDUCATION_VERBS)
+
+
+def _alias_variants(value: str) -> set[str]:
+    text = str(value or "").strip().lower()
+    if not text:
+        return set()
+    pieces = {
+        item.strip()
+        for item in re.split(r"[,/;、]+", text)
+        if item.strip()
+    }
+    pieces.add(text)
+    return {item for item in pieces if len(item) >= 2}
+
+
 def _mentioned_slugs(text: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
     catalog = load_catalog_bundle()
     normalized = _normalize_text(text)
-    product_hits: list[str] = []
-    ingredient_hits: list[str] = []
+    product_hits: list[tuple[int, str]] = []
+    ingredient_hits: list[tuple[int, str]] = []
+
+    def first_position(aliases: set[str]) -> int | None:
+        positions = [normalized.find(alias) for alias in aliases if alias and normalized.find(alias) >= 0]
+        return min(positions) if positions else None
 
     for product in catalog.products:
         aliases = {product.slug.lower(), product.name["zh"].lower(), product.name["en"].lower()}
@@ -113,17 +213,28 @@ def _mentioned_slugs(text: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
             aliases.update({zh_name[:4], zh_name[-4:], zh_name[1:]})
         if len(en_name) >= 8:
             aliases.update({en_name.split(" tea")[0], en_name.replace(" tea", "")})
-        if any(alias and alias in normalized for alias in aliases):
-            product_hits.append(product.slug)
+        position = first_position(aliases)
+        if position is not None:
+            product_hits.append((position, product.slug))
 
     for ingredient in catalog.ingredients:
         aliases = {ingredient.slug.lower(), ingredient.name["zh"].lower(), ingredient.name["en"].lower()}
-        aliases.update(part.lower() for part in ingredient.aliases.get("zh", "").split() if part)
-        aliases.update(part.lower() for part in ingredient.aliases.get("en", "").split() if part)
-        if any(alias and alias in normalized for alias in aliases):
-            ingredient_hits.append(ingredient.slug)
+        aliases.update(_alias_variants(ingredient.aliases.get("zh", "")))
+        aliases.update(_alias_variants(ingredient.aliases.get("en", "")))
+        zh_name = ingredient.name["zh"].strip().lower()
+        en_name = ingredient.name["en"].strip().lower()
+        if len(zh_name) >= 3:
+            aliases.add(zh_name[:-1])
+        for suffix in (" root", " berry", " bud", " peel", " citrus"):
+            if en_name.endswith(suffix):
+                aliases.add(en_name[: -len(suffix)])
+        position = first_position(aliases)
+        if position is not None:
+            ingredient_hits.append((position, ingredient.slug))
 
-    return tuple(dict.fromkeys(product_hits)), tuple(dict.fromkeys(ingredient_hits))
+    product_hits.sort(key=lambda item: item[0])
+    ingredient_hits.sort(key=lambda item: item[0])
+    return tuple(dict.fromkeys(slug for _, slug in product_hits)), tuple(dict.fromkeys(slug for _, slug in ingredient_hits))
 
 
 def route_intent(
@@ -138,12 +249,21 @@ def route_intent(
     if any(keyword in normalized for keyword in OUT_OF_SCOPE_PATTERNS):
         return IntentRoute("out_of_scope", "fallback_safe", "", products, ingredients)
 
-    if len(products) >= 2 or _contains_any(normalized, COMPARE_HINTS):
+    if len(products) >= 2 or (products and _contains_any(normalized, COMPARE_HINTS)):
         return IntentRoute("compare_products", "compare_products", "product_comparison", products, ingredients)
+
+    if _contains_any(normalized, ARTICLE_HINTS):
+        return IntentRoute("article_request", "article_navigator", "article_recommendation", products, ingredients)
+
+    if products and (_contains_any(normalized, PRODUCT_DETAIL_HINTS) or _contains_any(normalized, BREWING_HINTS)):
+        return IntentRoute("product_detail", "product_detail", "daily_wellness", products, ingredients)
 
     if _contains_any(normalized, PRODUCT_LIST_HINTS):
         use_case = "gifting" if _contains_any(normalized, GIFT_HINTS) else "daily_wellness"
         return IntentRoute("product_catalog_request", "catalog_guide", use_case, products, ingredients)
+
+    if products and _contains_any(normalized, GIFT_HINTS):
+        return IntentRoute("product_detail", "product_detail", "gifting", products, ingredients)
 
     if _contains_any(normalized, GIFT_HINTS):
         return IntentRoute("gifting_recommendation", "gifting_guide", "gifting", products, ingredients)
@@ -151,11 +271,15 @@ def route_intent(
     if ingredients and (_contains_any(normalized, INGREDIENT_HINTS) or not products):
         return IntentRoute("ingredient_explanation", "ingredient_explainer", "ingredient_learning", products, ingredients)
 
-    if _contains_any(normalized, ARTICLE_HINTS):
-        return IntentRoute("article_request", "article_navigator", "article_recommendation", products, ingredients)
-
     if _contains_any(normalized, BREWING_HINTS):
         return IntentRoute("brewing_or_usage_question", "brand_scope_faq", "daily_wellness", products, ingredients)
+
+    if _looks_like_wellness_education(
+        normalized,
+        has_products=bool(products),
+        has_ingredients=bool(ingredients),
+    ):
+        return IntentRoute("wellness_education_in_scope", "wellness_education", "daily_wellness", products, ingredients)
 
     if _contains_any(normalized, CONSTITUTION_HINTS):
         return IntentRoute("constitution_guidance", "deep_guided_intake", "recent_discomfort_guidance", products, ingredients)
