@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
+from app.llm_core import ReplyOutcome
 from app.main import app, webui_base_path
 from app.web_ui import _build_html_page, _build_intake_payload_from_state, INTAKE_CONFIG
 
@@ -20,17 +21,18 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("web_ui.js", resp.text)
         self.assertIn('id="brandPanel"', resp.text)
         self.assertIn('id="brandPanelBtn"', resp.text)
+        self.assertIn("Herbal Tea Recommendation Helper", resp.text)
         self.assertNotIn('data-api-base-label="1"', resp.text)
 
     def test_html_page_includes_runtime_welcome_message(self) -> None:
         html = _build_html_page(
             title="Demo Title",
             welcome_message="Custom welcome message",
-            api_base_url="/ui/api/chat",
+            api_base_url="/custom/api/chat",
             intake_config=INTAKE_CONFIG,
         )
         self.assertIn("Custom welcome message", html)
-        self.assertIn("/ui/api/chat", html)
+        self.assertIn("/custom/api/chat", html)
 
     def test_build_intake_payload_is_generic(self) -> None:
         payload = _build_intake_payload_from_state(
@@ -66,7 +68,7 @@ class WebUiTests(unittest.TestCase):
         self.assertTrue(any(option.get("description") for option in use_case_field.get("options", [])))
 
     def test_ui_chat_success(self) -> None:
-        with patch("app.web_ui.generate_reply", new=AsyncMock(return_value="ok")):
+        with patch("app.web_ui.generate_reply_result", new=AsyncMock(return_value=ReplyOutcome(ok=True, reply="ok"))):
             resp = self.client.post(f"{webui_base_path}/api/chat", json={"message": "hello", "user_id": "test-user"})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["reply"], "ok")
@@ -75,10 +77,28 @@ class WebUiTests(unittest.TestCase):
         async def _timeout(*args, **kwargs):
             raise asyncio.TimeoutError()
 
-        with patch("app.web_ui.generate_reply", new=AsyncMock(side_effect=_timeout)):
+        with patch("app.web_ui.generate_reply_result", new=AsyncMock(side_effect=_timeout)):
             resp = self.client.post(f"{webui_base_path}/api/chat", json={"message": "hello", "user_id": "test-user"})
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.json()["timed_out"])
+
+    def test_ui_chat_returns_block_metadata(self) -> None:
+        blocked = ReplyOutcome(
+            ok=False,
+            reply="Please slow down a little.",
+            blocked=True,
+            error_code="RATE_LIMITED",
+            retry_after_seconds=120,
+            unblock_at="2026-03-16T12:00:00+00:00",
+        )
+
+        with patch("app.web_ui.generate_reply_result", new=AsyncMock(return_value=blocked)):
+            resp = self.client.post(f"{webui_base_path}/api/chat", json={"message": "hello", "user_id": "test-user"})
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.json()["ok"])
+        self.assertTrue(resp.json()["blocked"])
+        self.assertEqual(resp.json()["error_code"], "RATE_LIMITED")
 
 
 if __name__ == "__main__":

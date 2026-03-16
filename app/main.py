@@ -7,9 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
+from app.llm_provider import warmup_llm_provider
 from app.wechat import router as wechat_router
 from app.web_ui import router as web_ui_router
-from app.ollama_client import warmup_ollama
 from app.product_helper.content import load_catalog_bundle
 from app.prompt_runtime import get_prompt_runtime
 
@@ -57,7 +57,7 @@ async def validate_prompt_runtime() -> None:
         len(catalog.ingredients),
         len(catalog.articles),
     )
-    await warmup_ollama()
+    await warmup_llm_provider()
 
 
 @app.get("/health")

@@ -1,115 +1,121 @@
-# Prompt & Guardrail Security Architecture
+# Prompt, Guardrail, and Runtime Safety
 
-## 项目结构建议
+This repo no longer uses a single free-form chatbot prompt as the primary runtime.
+The active production path is a hybrid flow:
+
+1. request admission and abuse protection
+2. input guardrail checks
+3. structured product-helper orchestration
+4. optional controlled naturalization through DashScope / Model Studio
+5. output guardrail and channel trimming
+
+## Active Runtime Graph
 
 ```text
-.
-|-- app/
-|   |-- main.py
-|   |-- wechat.py
-|   |-- llm_core.py
-|   |-- ollama_client.py
-|   |-- prompt_runtime.py      # 动态加载 prompt/guardrail 配置
-|   `-- guardrail.py           # 输入/输出约束与后处理
-|-- config/
-|   |-- prompt.example.yaml    # 公开模板（无敏感内容）
-|   `-- prompt.private.yaml    # 本地私有文件（git ignore）
-|-- docs/
-|   `-- prompt-guardrail-security.md
-|-- tests/
-|   |-- test_prompt_runtime.py
-|   `-- test_guardrail.py
-|-- .gitignore
-|-- .dockerignore
-|-- docker-compose.yml
-`-- README.md
+web UI / WeChat
+  -> app.llm_core.generate_reply_result()
+     -> app.usage_guard
+     -> app.guardrail.GuardrailEngine.check_input()
+     -> app.product_helper.service.handle()
+        -> product_helper high-risk precheck
+        -> intent routing
+        -> structured retrieval / ranking / cautions / links
+        -> direct-answer-first draft response
+     -> optional app.llm_provider.llm_chat()
+        -> Alibaba Cloud DashScope / Model Studio
+     -> app.guardrail.GuardrailEngine.sanitize_output()
+     -> channel trim + memory update
 ```
 
-## Prompt/Config 分离策略
+`app.llm_provider.py` is the only active LLM provider entrypoint in this repo.
+It targets the DashScope OpenAI-compatible API and does not require Ollama.
 
-- 代码中不保存业务敏感 prompt 内容，只保存加载器和模板渲染逻辑。
-- 使用 `config/prompt.private.yaml` 作为私有配置，文件不进入 Git。
-- 仓库仅保留 `config/prompt.example.yaml` 作为结构模板。
-- 运行时优先读取 `PROMPT_CONFIG_PATH`，未设置时按顺序查找：
-  1. `config/prompt.private.yaml`
-  2. `config/prompt.example.yaml`
-- 推荐将生产环境私有配置挂载到只读路径（如 `/run/secrets/` 或 `/srv/config/`）。
+## Separation of Responsibilities
 
-## Guardrail 设计建议
+- `app/llm_core.py`
+  - shared request entry for web and WeChat
+  - language resolution
+  - usage guard admission
+  - prompt guardrail checks
+  - optional naturalization call
+  - final output sanitization and memory update
 
-- Guardrail 作为独立模块，避免散落在业务代码中。
-- 建议至少包含四类能力：
-  1. 输入拦截：命中禁止意图时直接返回安全答复。
-  2. 输出拦截：模型输出触发高风险模式时阻断返回。
-  3. 输出脱敏：对密钥/手机号/证件号等模式进行替换。
-  4. 输出裁剪：限制字数，避免超长回复。
-- Guardrail 配置由 YAML 驱动，规则可迭代，不需要改应用代码。
+- `app/product_helper/service.py`
+  - high-risk escalation before recommendation logic
+  - intent routing
+  - structured product, ingredient, gifting, compare, and article handling
+  - response planning and deterministic draft composition
 
-## 运行时加载/注入机制
+- `app/product_helper/guardrails.py`
+  - high-risk detection
+  - caution note collection
+  - domain-safe fallback enforcement
 
-- `app/prompt_runtime.py` 在启动期加载配置并校验 schema。
-- `app/llm_core.py` 请求流程：
-  1. `check_input` 处理用户输入。
-  2. 读取 profile 的 `system_prompt` 和 `user_prompt_template`。
-  3. 注入动态变量（如 `user_id`、`channel`、`user_text`）。
-  4. 调用 `ollama_client` 发起模型请求。
-  5. `sanitize_output` 进行输出拦截、脱敏、裁剪。
-- 模块职责边界：
-  - `ollama_client.py` 只负责模型 API 调用。
-  - `prompt_runtime.py` 只负责配置与模板。
-  - `guardrail.py` 只负责策略执行。
+- `app/usage_guard.py`
+  - short-window rate limit
+  - repeated prompt abuse detection
+  - session message ceiling
+  - hourly and daily quotas
+  - single in-flight request lock
+  - optional Redis-backed shared state
 
-## CI/CD 与版本控制保护策略
+- `app/guardrail.py`
+  - generic input/output filtering and sanitization backstop
 
-- `.gitignore` 必须包含：
-  - `config/*.private.yaml`
-  - `config/private/`
-- `.dockerignore` 必须包含：
+- `app/llm_provider.py`
+  - DashScope request building
+  - timeout handling
+  - retry logic for retryable failures only
+  - circuit breaker
+  - structured logging without secret leakage
+
+## Prompt and Config Loading
+
+- Private prompt content stays in local-only files such as `config/prompt.private.yaml`.
+- Public-safe starter contracts live in `config/*.example.yaml`.
+- Runtime config is loaded via:
   - `.env`
-  - `config/*.private.yaml`
-  - `cloudflared/credentials.json`
-- CI 检查建议：
-  1. Secret Scan：扫描 prompt/private/secrets 误提交。
-  2. Policy Check：阻止提交 `*.private.yaml`、`.env`、凭据文件。
-  3. Unit Test：校验配置加载与 guardrail 行为。
-- 分支策略建议：
-  - 私有 prompt 仅存在本地、私有配置中心或 Secret Manager。
-  - 公共分支只允许模板和规则结构变更。
+  - `app/runtime_config.py`
+  - `app/prompt_runtime.py`
 
-## 示例代码片段（无敏感 prompt）
+The prompt layer should define behavior, style, and naturalization policy.
+It should not replace the structured product-helper logic or the usage guard layer.
+
+## Guardrail Integration Notes
+
+Guardrails are intentionally applied in multiple layers:
+
+1. `app.usage_guard` blocks abusive or over-limit requests before any paid model call.
+2. `app.guardrail.GuardrailEngine.check_input()` blocks generic unsafe input patterns.
+3. `app.product_helper.guardrails` shapes the response plan itself:
+   - acute-risk escalation
+   - medical boundary enforcement
+   - relevant caution injection
+4. `app.guardrail.GuardrailEngine.sanitize_output()` remains the final backstop.
+
+This means safety is not only a post-processing string filter.
+
+## Production Notes
+
+- Set `DASHSCOPE_API_KEY` through environment variables or a secret manager.
+- Keep `DASHSCOPE_BASE_URL` configurable; the default is the Alibaba Cloud compatible endpoint.
+- Prefer `REDIS_URL` in multi-instance deployments so quotas and cooldowns stay consistent.
+- Do not log raw API keys, full user health disclosures, or full prompt payloads.
+
+## Minimal Example
 
 ```python
-# app/llm_core.py (simplified)
-runtime = get_prompt_runtime()
-guardrail = GuardrailEngine(runtime.guardrail_settings)
-
-input_result = guardrail.check_input(user_text)
-if input_result.blocked:
-    return input_result.text
-
-system_prompt = runtime.system_prompt("wechat")
-user_prompt = runtime.render_user_prompt(
-    profile="wechat",
-    user_text=input_result.text,
-    user_id=user_id,
-    context={"channel": "wechat_mp"},
+outcome = await generate_reply_result(
+    user_id="wechat-user-123",
+    text="送妈妈的话哪款更稳妥？",
+    channel="wechat",
 )
 
-raw = await ollama_chat(system_prompt=system_prompt, user_prompt=user_prompt)
-return guardrail.sanitize_output(raw)
+if outcome.blocked:
+    return outcome.reply
+
+return outcome.reply
 ```
 
-```yaml
-# config/prompt.example.yaml (simplified)
-default_profile: wechat
-profiles:
-  wechat:
-    system_prompt: |
-      <SYSTEM_PROMPT_PLACEHOLDER>
-    user_prompt_template: |
-      [User Message]
-      {user_text}
-guardrail:
-  blocked_input_patterns:
-    - "(?i)<INPUT_BLOCK_PATTERN>"
-```
+The returned text may be a deterministic draft or a controlled DashScope-polished reply,
+but the surrounding safety and product-helper orchestration stay in charge.

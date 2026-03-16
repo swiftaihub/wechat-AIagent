@@ -1,12 +1,12 @@
 (function () {
   const boot = window.__WEBUI_BOOT__ || {};
   const CONFIG = boot.CONFIG || {
-    title: { zh: "健康咨询助手", en: "Health Guidance Assistant" },
+    title: { zh: "草本茶推荐助手", en: "Herbal Tea Recommendation Helper" },
     welcomeMessage: {
       zh: "欢迎来到品牌 AI Helper。你可以告诉我最近的状态、送礼方向，或想先了解哪类草本茶。",
       en: "Welcome to the brand AI helper. Share how you have been feeling, what you might want to gift, or the tea direction you want to explore.",
     },
-    apiBaseUrl: "/ui/api/chat",
+    apiBaseUrl: "/ui/herbal_advice/api/chat",
   };
   const INTAKE_CONFIG = boot.INTAKE_CONFIG || {
     enabled: false,
@@ -62,6 +62,7 @@
       status_txt_exported: "TXT 已导出",
       status_json_exported: "JSON 已导出",
       status_timeout: "超时回退（{{elapsed}} ms）",
+      status_blocked: "当前访问已暂时限制",
       status_done: "完成（{{elapsed}} ms）",
       status_failed: "请求失败",
       request_failed: "请求失败，请检查服务状态后重试。",
@@ -127,6 +128,7 @@
       status_txt_exported: "TXT exported",
       status_json_exported: "JSON exported",
       status_timeout: "Timeout fallback ({{elapsed}} ms)",
+      status_blocked: "Access temporarily limited",
       status_done: "Done ({{elapsed}} ms)",
       status_failed: "Request failed",
       request_failed: "Request failed. Please check service status and try again.",
@@ -1113,7 +1115,7 @@
         role: "assistant",
         text: replyText,
         timestamp: nowIso(),
-        error: Boolean(data.timed_out),
+        error: Boolean(data.timed_out || data.blocked),
       };
       persistMessages();
       renderMessages({ scrollToBottom: true });
@@ -1121,6 +1123,8 @@
       const elapsed = Number(data.elapsed_ms || 0);
       if (data.timed_out) {
         setStatusByKey("status_timeout", elapsed);
+      } else if (data.blocked) {
+        setStatusByKey("status_blocked", elapsed);
       } else {
         setStatusByKey("status_done", elapsed);
       }

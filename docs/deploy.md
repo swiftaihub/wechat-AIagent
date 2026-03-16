@@ -9,14 +9,23 @@ At minimum:
 ```dotenv
 PORT=8787
 WEBUI_HOST_PORT=8788
-WEBUI_TITLE=OpenClaw Chat
-WEBUI_TITLE_ZH=健康咨询助手
-WEBUI_TITLE_EN=OpenClaw Chat
-WEBUI_WELCOME_MESSAGE=Welcome. Tell me your situation and I will provide practical wellness guidance.
-WEBUI_WELCOME_MESSAGE_ZH=欢迎使用健康咨询助手。请告诉我您的情况，我将提供实用的健康指导。
-WEBUI_WELCOME_MESSAGE_EN=Welcome. Tell me your situation and I will provide practical wellness guidance.
-WEBUI_API_BASE_URL=/ui/api/chat
+MAX_INPUT_CHARS=4000
+MAX_OUTPUT_TOKENS=800
+WEBUI_BASE_PATH=/ui/herbal_advice
+WEBUI_TITLE=Herbal Tea Recommendation Helper
+WEBUI_TITLE_ZH=草本茶推荐助手
+WEBUI_TITLE_EN=Herbal Tea Recommendation Helper
+WEBUI_WELCOME_MESSAGE_ZH=欢迎来到品牌 AI Helper。你可以告诉我最近的状态、送礼方向，或想先了解哪类草本茶。
+WEBUI_WELCOME_MESSAGE_EN=Welcome to the brand AI helper. Share how you have been feeling, what you might want to gift, or the tea direction you want to explore.
+WEBUI_API_BASE_URL=/ui/herbal_advice/api/chat
 WEBUI_CORS_ALLOWED_ORIGINS=
+DASHSCOPE_API_KEY=
+DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+DASHSCOPE_MODEL=qwen-flash
+RATE_LIMIT_MAX_REQUESTS=8
+MAX_MESSAGES_PER_USER_SESSION=20
+MAX_REQUESTS_PER_HOUR=40
+MAX_REQUESTS_PER_DAY=200
 ```
 
 If your frontend and API are on different domains, set:
@@ -37,7 +46,7 @@ docker run --rm -p 8788:8787 --env-file .env wechat-aiagent:latest
 Check:
 
 - `http://localhost:8788/health`
-- `http://localhost:8788/ui`
+- `http://localhost:8788/ui/herbal_advice`
 
 ## 3. VPS Path: Docker + Nginx Reverse Proxy
 
@@ -92,20 +101,21 @@ sudo certbot --nginx -d chat.yourdomain.com
 Public URL example:
 
 - `https://chat.yourdomain.com/ui`
+- `https://chat.yourdomain.com/ui/herbal_advice`
 
 ## 4. PaaS Path A: Render
 
 1. Push repository to GitHub.
 2. Render -> New -> Web Service -> connect repository.
 3. Runtime: `Docker`.
-4. Set environment variables in Render dashboard (`WEBUI_WELCOME_MESSAGE`, model vars, etc.).
+4. Set environment variables in Render dashboard (`WEBUI_WELCOME_MESSAGE`, `DASHSCOPE_API_KEY`, protection limits, etc.).
 5. Expose port `8787` (Render typically injects `PORT`; app already supports `PORT`).
 6. Deploy and open generated URL:
    - `https://<service-name>.onrender.com/ui`
 
 Notes:
 
-- If Ollama is not in the same network, point `OLLAMA_BASE_URL` to reachable internal endpoint.
+- Keep `DASHSCOPE_API_KEY` in the platform secret store rather than committing it into files.
 - For separate frontend/API domains, configure `WEBUI_CORS_ALLOWED_ORIGINS`.
 
 ## 5. PaaS Path B: Fly.io
@@ -125,9 +135,11 @@ fly launch --no-deploy
 3. Set env vars:
 
 ```bash
-fly secrets set WEBUI_WELCOME_MESSAGE="Welcome to OpenClaw"
-fly secrets set WEBUI_API_BASE_URL=/ui/api/chat
-fly secrets set OLLAMA_BASE_URL=http://<reachable-ollama-endpoint>:11434
+fly secrets set WEBUI_API_BASE_URL=/ui/herbal_advice/api/chat
+fly secrets set WEBUI_BASE_PATH=/ui/herbal_advice
+fly secrets set DASHSCOPE_API_KEY=<your-model-studio-key>
+fly secrets set DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+fly secrets set DASHSCOPE_MODEL=qwen-flash
 ```
 
 4. Deploy:
@@ -139,7 +151,7 @@ fly deploy
 5. Open:
 
 ```text
-https://<app-name>.fly.dev/ui
+https://<app-name>.fly.dev/ui/herbal_advice
 ```
 
 ## 6. Observability and Health
@@ -175,10 +187,11 @@ Current UI uses standard HTTP POST (no WebSocket requirement). If you later enab
 
 ### Public URL opens, but chat fails
 
-- Verify `OLLAMA_BASE_URL` is reachable from container runtime.
-- Check app logs for timeout and model errors.
+- Verify `DASHSCOPE_API_KEY` and `DASHSCOPE_BASE_URL` are set in the runtime environment.
+- Check app logs for timeout, quota, or upstream authentication errors.
 
 ### WeChat callback works but UI not reachable
 
-- Check reverse proxy routes `/ui` and `/ui/api/chat`.
+- Check reverse proxy routes `/ui/herbal_advice` and `/ui/herbal_advice/api/chat`.
+- If you intentionally changed `WEBUI_BASE_PATH`, make sure the proxy matches that exact path.
 - Ensure firewall allows ports `80/443` to proxy host.

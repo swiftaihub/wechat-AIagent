@@ -106,6 +106,7 @@ def rank_products(
 ) -> tuple[ProductRecommendation, ...]:
     lang = normalize_language(language)
     recommendations: list[ProductRecommendation] = []
+    preferred_slug_set = set(preferred_slugs)
     combined_text = _normalized_text(
         query_text,
         intake.get("free_text_recent_discomfort", ""),
@@ -115,6 +116,8 @@ def rank_products(
 
     for product in products:
         if product.status != "active":
+            continue
+        if intent == "compare_products" and preferred_slug_set and product.slug not in preferred_slug_set:
             continue
 
         score = 0.0
@@ -179,7 +182,9 @@ def rank_products(
 
     recommendations.sort(key=lambda item: item.score, reverse=True)
     if intent == "compare_products":
-        max_items = min(3, len(recommendations))
+        max_items = min(max(2, len(preferred_slugs)), len(recommendations))
+    elif intent == "gifting_recommendation":
+        max_items = min(2, len(recommendations))
     elif recommendations and len(recommendations) > 1 and recommendations[0].score - recommendations[1].score >= 3:
         max_items = 1
     else:
