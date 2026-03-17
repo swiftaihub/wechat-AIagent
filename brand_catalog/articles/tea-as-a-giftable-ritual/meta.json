@@ -13,13 +13,34 @@
     "zh": "品牌故事"
   },
   "tags": {
-    "en": ["Gifting", "Brand", "Placeholder"],
-    "zh": ["礼赠", "品牌", "占位内容"]
+    "en": [
+      "Gifting",
+      "Brand",
+      "Placeholder"
+    ],
+    "zh": [
+      "礼赠",
+      "品牌",
+      "占位内容"
+    ]
   },
   "coverImage": "/images/articles/tea-ritual.jpg",
   "featured": false,
   "publishedAt": "2026-03-08",
   "readingTheme": "serif",
-  "relatedProducts": ["crimson-gold-radiance-tea", "gilded-cordyceps-reserve-tea", "rosy-glow-nourish-tea"],
-  "relatedIngredients": ["rose", "saffron", "cordyceps", "longan"]
+  "relatedProducts": [
+    "crimson-gold-radiance-tea",
+    "gilded-cordyceps-reserve-tea",
+    "rosy-glow-nourish-tea"
+  ],
+  "relatedIngredients": [
+    "rose",
+    "saffron",
+    "cordyceps",
+    "longan"
+  ],
+  "links": {
+    "zh": "https://tea.swiftaihub.com/zh/articles/tea-as-a-giftable-ritual",
+    "en": "https://tea.swiftaihub.com/en/articles/tea-as-a-giftable-ritual"
+  }
 }

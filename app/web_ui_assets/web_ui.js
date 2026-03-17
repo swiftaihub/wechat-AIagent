@@ -394,6 +394,42 @@
       .replace(/'/g, "&#39;");
   }
 
+  function sanitizeUrl(rawUrl) {
+    try {
+      const parsed = new URL(String(rawUrl || "").trim(), window.location.origin);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        return "";
+      }
+      return parsed.href;
+    } catch (_error) {
+      return "";
+    }
+  }
+
+  function renderMessageHtml(text) {
+    const raw = String(text || "");
+    const pattern = /\[([^\]\n]{1,160})\]\((https?:\/\/[^\s)]+)\)/g;
+    const htmlParts = [];
+    let lastIndex = 0;
+    let match = null;
+
+    while ((match = pattern.exec(raw)) !== null) {
+      htmlParts.push(escapeHtml(raw.slice(lastIndex, match.index)));
+      const safeUrl = sanitizeUrl(match[2]);
+      if (safeUrl) {
+        htmlParts.push(
+          `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(match[1])}</a>`
+        );
+      } else {
+        htmlParts.push(escapeHtml(match[0]));
+      }
+      lastIndex = pattern.lastIndex;
+    }
+
+    htmlParts.push(escapeHtml(raw.slice(lastIndex)));
+    return htmlParts.join("").replace(/\n/g, "<br>");
+  }
+
   function resolveStatusText(state) {
     const template = t(state.key);
     return formatText(template, { elapsed: state.elapsed || 0 });
@@ -885,7 +921,7 @@
 
         const bubble = document.createElement("div");
         bubble.className = "bubble" + (item.error ? " error" : "");
-        bubble.textContent = item.text;
+        bubble.innerHTML = renderMessageHtml(item.text);
 
         const ts = document.createElement("div");
         ts.className = "ts";

@@ -887,6 +887,13 @@ body.theme-dark .messages-panel {
   word-break: break-word;
 }
 
+.bubble a {
+  color: var(--color-accent-deep);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+}
+
 body.theme-dark .bubble {
   background: linear-gradient(180deg, rgba(52, 40, 31, 0.86), rgba(38, 30, 23, 0.72));
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.16);
@@ -902,6 +909,10 @@ body.theme-dark .bubble {
     linear-gradient(135deg, rgba(176, 136, 74, 0.95), rgba(138, 103, 52, 0.94)),
     linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent);
   color: var(--color-user-text);
+}
+
+.row.user .bubble a {
+  color: currentColor;
 }
 
 .bubble.error {

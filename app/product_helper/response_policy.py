@@ -6,7 +6,7 @@ from typing import Iterable
 from app.i18n import normalize_language, resolve_localized_text
 from app.product_helper.config import load_constitution_config
 from app.product_helper.intent_router import IntentRoute
-from app.product_helper.models import CatalogBundle, ConstitutionAssessment, LinkEntry, Product, ProductRecommendation
+from app.product_helper.models import CatalogBundle, ConstitutionAssessment, Ingredient, LinkEntry, Product, ProductRecommendation
 
 
 def _normalized_text(*values: object) -> str:
@@ -59,15 +59,38 @@ def _premium_feel(product: Product, language: str) -> str:
     return "feels more premium" if premium else "feels easier for everyday gifting"
 
 
+def _is_http_url(url: str) -> bool:
+    normalized = str(url or "").strip().lower()
+    return normalized.startswith("https://") or normalized.startswith("http://")
+
+
+def _markdown_link(label: str, url: str) -> str:
+    safe_label = str(label or "").strip()
+    safe_url = str(url or "").strip()
+    if not safe_label or not _is_http_url(safe_url):
+        return safe_label or safe_url
+    return f"[{safe_label}]({safe_url})"
+
+
+def _link_label(language: str, entry: LinkEntry) -> str:
+    title = entry.en_title if language == "en" else entry.zh_title
+    if entry.type == "product":
+        return f"View Product: {title}" if language == "en" else f"查看产品：{title}"
+    if entry.type == "ingredient":
+        return f"Learn more about {title}" if language == "en" else f"查看{title}详情"
+    if entry.type == "article":
+        return f"Read article: {title}" if language == "en" else f"查看文章：{title}"
+    return title
+
+
 def _format_links(language: str, links: tuple[LinkEntry, ...], *, limit: int) -> str:
-    selected = tuple(link for link in links[:limit] if link.url)
+    selected = tuple(link for link in links[:limit] if _is_http_url(link.url))
     if not selected:
         return ""
     lead = "If you want the next step, these are the most useful pages:" if language == "en" else "如果你想继续看详情，可以先看："
     lines = []
     for entry in selected:
-        title = entry.en_title if language == "en" else entry.zh_title
-        lines.append(f"- {title}: {entry.url}")
+        lines.append(f"- {_markdown_link(_link_label(language, entry), entry.url)}")
     return f"{lead}\n" + "\n".join(lines)
 
 
@@ -80,7 +103,7 @@ def _render_safety_note(language: str, safety_notes: tuple[str, ...]) -> str:
 
 def _product_detail_focus(query_text: str) -> str:
     normalized = _normalized_text(query_text)
-    if _contains_any(normalized, ("原材料", "原料", "成分", "配方", "里面都有什么", "ingredients", "what is in", "what's in")):
+    if _contains_any(normalized, ("原材料", "原料", "成分", "配方", "里面都有什么", "每个原料", "介绍一下", "ingredients", "what is in", "what's in", "each ingredient")):
         return "ingredients"
     if _contains_any(normalized, ("口感", "味道", "喝起来", "taste", "flavor", "bitter")):
         return "taste"
@@ -117,6 +140,83 @@ def _top_pair_text(items: list[str], language: str) -> str:
     if language == "en":
         return ", ".join(items[:-1]) + f", and {items[-1]}"
     return "、".join(items)
+
+
+def _display_ingredient(ingredient: Ingredient, language: str) -> str:
+    return ingredient.name["en"] if language == "en" else ingredient.name["zh"]
+
+
+def _localized_value(value: object, language: str) -> str:
+    if isinstance(value, dict):
+        return resolve_localized_text(value, language, fallback="")
+    return str(value or "").strip()
+
+
+def _ingredient_pairings_text(ingredient: Ingredient, bundle: CatalogBundle, language: str) -> str:
+    names = [
+        _display_ingredient(bundle.ingredients_by_slug[slug], language)
+        for slug in ingredient.pairings[:4]
+        if slug in bundle.ingredients_by_slug
+    ]
+    return _top_pair_text(names, language)
+
+
+def _ingredient_field_label(field: str, language: str) -> str:
+    if language == "en":
+        labels = {
+            "aliases": "Aliases",
+            "summary": "Summary",
+            "nutrition_focus": "Nutrition focus",
+            "traditional_use": "Traditional use",
+            "flavor_profile": "Flavor profile",
+            "pairings": "Pairings",
+            "cautions": "Cautions",
+        }
+    else:
+        labels = {
+            "aliases": "别名",
+            "summary": "简介",
+            "nutrition_focus": "关注点",
+            "traditional_use": "传统用法",
+            "flavor_profile": "风味",
+            "pairings": "常见搭配",
+            "cautions": "注意",
+        }
+    return labels[field]
+
+
+def _ingredient_detail_block(ingredient: Ingredient, bundle: CatalogBundle, language: str) -> str:
+    name = _display_ingredient(ingredient, language)
+    aliases = _localized_value(ingredient.aliases, language)
+    summary = _localized_value(ingredient.summary, language)
+    nutrition_focus = _localized_value(ingredient.nutrition_focus, language)
+    traditional_use = _localized_value(ingredient.traditional_use, language)
+    flavor_profile = _localized_value(ingredient.flavor_profile, language)
+    pairings = _ingredient_pairings_text(ingredient, bundle, language)
+    cautions = _localized_value(ingredient.cautions, language)
+
+    lines = [f"- {name}"]
+    if aliases:
+        lines.append(f"  {_ingredient_field_label('aliases', language)}: {aliases}")
+    if summary:
+        lines.append(f"  {_ingredient_field_label('summary', language)}: {summary}")
+    if nutrition_focus:
+        lines.append(f"  {_ingredient_field_label('nutrition_focus', language)}: {nutrition_focus}")
+    if traditional_use:
+        lines.append(f"  {_ingredient_field_label('traditional_use', language)}: {traditional_use}")
+    if flavor_profile:
+        lines.append(f"  {_ingredient_field_label('flavor_profile', language)}: {flavor_profile}")
+    if pairings:
+        lines.append(f"  {_ingredient_field_label('pairings', language)}: {pairings}")
+    if cautions:
+        lines.append(f"  {_ingredient_field_label('cautions', language)}: {cautions}")
+    return "\n".join(lines)
+
+
+def _missing_ingredient_block(slug: str, language: str) -> str:
+    if language == "en":
+        return f"- {slug}\n  Summary: This ingredient record was not found in the current catalog."
+    return f"- {slug}\n  简介: 当前原料库里暂时没有找到这个原料档案。"
 
 
 def _product_blurb(recommendation: ProductRecommendation, language: str) -> str:
@@ -221,18 +321,33 @@ def _compose_product_detail_reply(
 
     if focus == "ingredients":
         if language == "en":
-            first_line = f"The core ingredients in {name} are {ingredient_text}."
-            if extra_ingredients:
-                first_line = f"{first_line[:-1]}, with {', '.join(extra_ingredients)} rounding it out."
+            first_line = f"If you want to read {name} ingredient by ingredient, here is the blend in plain language."
+            if ingredient_text:
+                first_line += f" The core build is {ingredient_text}"
+                if extra_ingredients:
+                    first_line += f", with {', '.join(extra_ingredients)} rounding it out"
+                first_line += "."
             lines.append(first_line)
-            lines.append(f"Overall it leans toward {tagline.lower()}, and the taste is more {taste}.")
-            lines.append("It is not the kind of blend that reads as harsh or heavily medicinal.")
         else:
-            first_line = f"这款的核心原料是 {ingredient_text}"
-            if extra_ingredients:
-                first_line += f"，另外还配了{'、'.join(extra_ingredients)}"
-            lines.append(first_line + "。")
-            lines.append(f"整体会更偏 {summary}，入口是 {taste}，不会是那种很重很苦的药感茶。")
+            first_line = f"如果你想按原料一项项看，{name} 可以这样理解。"
+            if ingredient_text:
+                first_line += f" 它的核心组合是 {ingredient_text}"
+                if extra_ingredients:
+                    first_line += f"，另外还有 {'、'.join(extra_ingredients)}"
+                first_line += "。"
+            lines.append(first_line)
+
+        for ingredient_slug in product.ingredients:
+            ingredient = bundle.ingredients_by_slug.get(ingredient_slug)
+            if ingredient is None:
+                lines.append(_missing_ingredient_block(ingredient_slug, language))
+                continue
+            lines.append(_ingredient_detail_block(ingredient, bundle, language))
+
+        if language == "en":
+            lines.append(f"Overall, it leans toward {tagline.lower()} and tastes more {taste}.")
+        else:
+            lines.append(f"整体上它更偏 {tagline}，口感会是 {taste}。")
     elif focus == "taste":
         if language == "en":
             lines.append(f"{name} tastes more {taste}.")
@@ -280,7 +395,7 @@ def _compose_product_detail_reply(
     if safety_line:
         lines.append(safety_line)
 
-    link_limit = 1 if focus in {"gift", "overview", "suitability"} else 0
+    link_limit = 1 if focus in {"ingredients", "gift", "overview", "suitability"} else 0
     link_block = _format_links(language, links, limit=link_limit)
     if link_block:
         lines.append(link_block)
@@ -349,36 +464,17 @@ def _compose_ingredient_reply(
             else "If you tell me the ingredient, I can explain it directly through taste, pairings, and tea-use context."
         )
 
-    name = ingredient.name["en"] if language == "en" else ingredient.name["zh"]
-    summary = ingredient.summary["en"] if language == "en" else ingredient.summary["zh"]
-    flavor = resolve_localized_text(ingredient.flavor_profile, language)
-    traditional = ingredient.traditional_use["en"] if language == "en" else ingredient.traditional_use["zh"]
-    pairing_names = [
-        bundle.ingredients_by_slug[item].name["en"] if language == "en" else bundle.ingredients_by_slug[item].name["zh"]
-        for item in ingredient.pairings[:3]
-        if item in bundle.ingredients_by_slug
-    ]
-    pairings_text = _top_pair_text(pairing_names, language)
+    name = _display_ingredient(ingredient, language)
 
     if language == "en":
         lines = [
-            f"{name} is usually used in a tea context because {summary.lower()}",
-            (
-                f"Taste-wise it is more {flavor}, and it often appears alongside {pairings_text}."
-                if pairings_text
-                else f"Taste-wise it is more {flavor}."
-            ),
-            traditional,
+            f"If you want a cleaner read on {name} in a tea context, here it is.",
+            _ingredient_detail_block(ingredient, bundle, language),
         ]
     else:
         lines = [
-            f"{name} 放在草本茶里，通常会因为 {summary} 而被选进配方。",
-            (
-                f"喝感上更偏 {flavor}，也常和 {pairings_text} 这类原料搭在一起。"
-                if pairings_text
-                else f"喝感上更偏 {flavor}。"
-            ),
-            traditional,
+            f"如果你想单看 {name} 这味原料，可以先这样理解。",
+            _ingredient_detail_block(ingredient, bundle, language),
         ]
 
     safety_line = _render_safety_note(language, safety_notes)
@@ -532,18 +628,55 @@ def _compose_article_reply(
     return "我可以继续帮你缩到更适合的产品、原料或送礼文章方向。你告诉我想先看哪一边就行。"
 
 
+def _compose_casual_chat_reply(language: str, query_text: str) -> str:
+    normalized = _normalized_text(query_text)
+    if language == "en":
+        if _contains_any(normalized, ("hi", "hello", "hey")):
+            return "Hi, I'm here. We can keep this casual, or if you want, I can help with teas, ingredients, gifting, or light wellness questions."
+        if _contains_any(normalized, ("thanks", "thank you")):
+            return "You're welcome. If you want to keep going, just send the next question."
+        if _contains_any(normalized, ("how are you", "how's your day")):
+            return "I'm doing well and ready to help. If you want, we can chat casually or jump straight into tea, ingredients, or gifting."
+        if _contains_any(normalized, ("who are you", "what are you")):
+            return "I'm the brand's bilingual wellness helper. I'm best at product guidance, ingredient explanations, gifting ideas, and tea-related questions."
+        return ""
+
+    if _contains_any(normalized, ("你好", "嗨", "哈喽", "hello", "hi")):
+        return "你好，我在。你可以和我轻松聊，也可以直接问茶、原料、送礼或轻量养生问题。"
+    if _contains_any(normalized, ("谢谢", "多谢")):
+        return "不客气，你继续问就行。"
+    if _contains_any(normalized, ("你怎么样", "你在吗", "忙吗")):
+        return "我在，也准备好继续帮你。你要是想轻松聊两句可以，要是想直接看茶或原料也可以。"
+    if _contains_any(normalized, ("你是谁", "你是做什么的")):
+        return "我是这个品牌里的双语 wellness helper，主要帮你做产品挑选、原料解释、送礼建议和茶相关问答。"
+    return ""
+
+
+def _apply_loop_recovery_prefix(text: str, language: str, loop_detected: bool) -> str:
+    normalized = str(text or "").strip()
+    if not loop_detected or not normalized:
+        return normalized
+    prefix = "Let me answer that more directly from your latest message." if language == "en" else "我直接接你这句最新问题来回答。"
+    if normalized.startswith(prefix):
+        return normalized
+    return f"{prefix}\n\n{normalized}"
+
+
 def _compose_brand_scope_reply(language: str, query_text: str, links: tuple[LinkEntry, ...]) -> str:
     normalized = _normalized_text(query_text)
+    casual_reply = _compose_casual_chat_reply(language, query_text)
+    if casual_reply:
+        return casual_reply
     if language == "en":
         if _contains_any(normalized, ("what can you do", "how can you help", "help with")):
             base = "I can help with product selection, gifting, ingredient explanations, light wellness education, and the most useful articles across the brand site."
         else:
-            base = "I can keep this practical around tea products, ingredients, gifting, and the most relevant brand content."
+            base = "We can keep this practical and natural around tea products, ingredients, gifting, and the most relevant brand content."
     else:
         if _contains_any(normalized, ("你能做什么", "能帮我什么", "怎么帮")):
             base = "我可以帮你做产品挑选、送礼建议、原料解释、轻量的养生知识说明，以及站内最相关的内容导览。"
         else:
-            base = "这类问题我会尽量收在产品、原料、送礼和站内内容这几个更有用的方向里。"
+            base = "这类问题我会尽量用自然一点的方式，收在产品、原料、送礼和站内内容这几个更有用的方向里。"
     link_block = _format_links(language, links, limit=1)
     return f"{base}\n\n{link_block}" if link_block else base
 
@@ -559,6 +692,8 @@ def compose_reply(
     recommendations: tuple[ProductRecommendation, ...],
     links: tuple[LinkEntry, ...],
     safety_notes: tuple[str, ...],
+    previous_assistant_text: str = "",
+    loop_detected: bool = False,
 ) -> str:
     lang = normalize_language(language)
 
@@ -571,7 +706,7 @@ def compose_reply(
                 if lang == "zh"
                 else "If you name the product, I can answer directly through ingredients, taste, or fit."
             )
-        return _compose_product_detail_reply(
+        reply = _compose_product_detail_reply(
             language=lang,
             query_text=query_text,
             product=target,
@@ -579,9 +714,10 @@ def compose_reply(
             safety_notes=safety_notes,
             links=links,
         )
+        return _apply_loop_recovery_prefix(reply, lang, loop_detected)
 
     if intent in {"symptom_or_discomfort_guidance", "constitution_guidance", "product_recommendation_direct", "gifting_recommendation"}:
-        return _compose_recommendation_reply(
+        reply = _compose_recommendation_reply(
             language=lang,
             intent=intent,
             query_text=query_text,
@@ -589,9 +725,10 @@ def compose_reply(
             safety_notes=safety_notes,
             links=links,
         )
+        return _apply_loop_recovery_prefix(reply, lang, loop_detected)
 
     if intent == "compare_products":
-        return _compose_compare_reply(
+        reply = _compose_compare_reply(
             language=lang,
             query_text=query_text,
             route=route,
@@ -599,9 +736,10 @@ def compose_reply(
             safety_notes=safety_notes,
             links=links,
         )
+        return _apply_loop_recovery_prefix(reply, lang, loop_detected)
 
     if intent == "ingredient_explanation":
-        return _compose_ingredient_reply(
+        reply = _compose_ingredient_reply(
             language=lang,
             route=route,
             query_text=query_text,
@@ -609,25 +747,31 @@ def compose_reply(
             links=links,
             safety_notes=safety_notes,
         )
+        return _apply_loop_recovery_prefix(reply, lang, loop_detected)
 
     if intent == "product_catalog_request":
-        return (
+        reply = (
             "如果你想先看茶单，我更建议按场景来读：元气恢复、清润熬夜后、轻清平衡、饭后轻负担、以及送礼方向。你告诉我想先看哪一路，我可以直接缩到 1-2 款。"
             if lang == "zh"
             else "If you want the full lineup first, the cleanest way to read it is by use case: energy, dryness after late nights, lighter balance, after-meal ease, or gifting. Tell me the direction and I can narrow it to one or two teas."
         ) + (f"\n\n{_format_links(lang, links, limit=1)}" if links else "")
+        return _apply_loop_recovery_prefix(reply, lang, loop_detected)
 
     if intent == "article_request":
-        return _compose_article_reply(language=lang, query_text=query_text, bundle=bundle, links=links)
+        reply = _compose_article_reply(language=lang, query_text=query_text, bundle=bundle, links=links)
+        return _apply_loop_recovery_prefix(reply, lang, loop_detected)
 
     if intent == "wellness_education_in_scope":
-        return _compose_wellness_education_reply(language=lang, query_text=query_text)
+        reply = _compose_wellness_education_reply(language=lang, query_text=query_text)
+        return _apply_loop_recovery_prefix(reply, lang, loop_detected)
 
     if intent == "brewing_or_usage_question":
-        return (
+        reply = (
             "这类问题我可以直接按饮用场景、口感和冲泡方式来讲。如果你告诉我是哪一款茶，我可以回答得更具体。"
             if lang == "zh"
             else "I can answer that directly through taste, use case, and brewing style. If you tell me which tea you mean, I can make it more specific."
         )
+        return _apply_loop_recovery_prefix(reply, lang, loop_detected)
 
-    return _compose_brand_scope_reply(lang, query_text, links)
+    reply = _compose_brand_scope_reply(lang, query_text, links)
+    return _apply_loop_recovery_prefix(reply, lang, loop_detected)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.product_helper.catalog_links import localized_catalog_link
 from app.product_helper.config import LinkRoutingConfig
 from app.product_helper.models import Article, CatalogBundle, Ingredient, LinkEntry, Product, ProductRecommendation
 
@@ -11,8 +12,17 @@ def _route_url(base_url: str, pattern: str, language: str, slug: str = "") -> st
     return f"{base_url}{resolved}"
 
 
-def _entry_from_product(product: Product, language: str, base_url: str, routes: dict[str, str], override: dict[str, object]) -> LinkEntry:
-    pattern = str(routes.get("product", "/{locale}/products/{slug}"))
+def _is_http_url(url: str) -> bool:
+    normalized = str(url or "").strip().lower()
+    return (normalized.startswith("https://") or normalized.startswith("http://")) and not any(
+        hint in normalized for hint in ("your-store", "example.com", "example.org", "example.net", "placeholder")
+    )
+
+
+def _entry_from_product(product: Product, language: str, base_url: str, routes: dict[str, str], override: dict[str, object]) -> LinkEntry | None:
+    product_url = localized_catalog_link(product.links, language) or str(product.buy_link).strip()
+    if not _is_http_url(product_url):
+        return None
     tags = tuple(
         dict.fromkeys(list(product.benefit_tags) + list(product.extra_tags) + [str(item).strip() for item in override.get("tags", []) if str(item).strip()])
     )
@@ -22,7 +32,7 @@ def _entry_from_product(product: Product, language: str, base_url: str, routes: 
         slug=product.slug,
         zh_title=product.name["zh"],
         en_title=product.name["en"],
-        url=_route_url(base_url, pattern, language, product.slug),
+        url=product_url,
         tags=tags,
         related_constitutions=product.constitution_types,
         related_discomforts=product.recent_discomforts,
@@ -35,14 +45,19 @@ def _entry_from_product(product: Product, language: str, base_url: str, routes: 
 
 
 def _entry_from_ingredient(ingredient: Ingredient, language: str, base_url: str, routes: dict[str, str], override: dict[str, object]) -> LinkEntry:
-    pattern = str(routes.get("ingredient", "/{locale}/ingredients/{slug}"))
+    ingredient_url = localized_catalog_link(ingredient.links, language) or _route_url(
+        base_url,
+        str(routes.get("ingredient", "/{locale}/ingredients/{slug}")),
+        language,
+        ingredient.slug,
+    )
     return LinkEntry(
         id=f"ingredient:{ingredient.slug}",
         type="ingredient",
         slug=ingredient.slug,
         zh_title=ingredient.name["zh"],
         en_title=ingredient.name["en"],
-        url=_route_url(base_url, pattern, language, ingredient.slug),
+        url=ingredient_url,
         tags=tuple(str(item).strip() for item in override.get("tags", []) if str(item).strip()),
         related_constitutions=tuple(str(item).strip() for item in override.get("related_constitutions", []) if str(item).strip()),
         related_discomforts=tuple(str(item).strip() for item in override.get("related_discomforts", []) if str(item).strip()),
@@ -55,7 +70,12 @@ def _entry_from_ingredient(ingredient: Ingredient, language: str, base_url: str,
 
 
 def _entry_from_article(article: Article, language: str, base_url: str, routes: dict[str, str], override: dict[str, object]) -> LinkEntry:
-    pattern = str(routes.get("article", "/{locale}/articles/{slug}"))
+    article_url = localized_catalog_link(article.links, language) or _route_url(
+        base_url,
+        str(routes.get("article", "/{locale}/articles/{slug}")),
+        language,
+        article.slug,
+    )
     tag_source = article.tags["en"] if language == "en" else article.tags["zh"]
     return LinkEntry(
         id=f"article:{article.slug}",
@@ -63,7 +83,7 @@ def _entry_from_article(article: Article, language: str, base_url: str, routes: 
         slug=article.slug,
         zh_title=article.title["zh"],
         en_title=article.title["en"],
-        url=_route_url(base_url, pattern, language, article.slug),
+        url=article_url,
         tags=tuple(item.strip() for item in tag_source.replace("、", ",").split(",") if item.strip()),
         related_constitutions=tuple(str(item).strip() for item in override.get("related_constitutions", []) if str(item).strip()),
         related_discomforts=tuple(str(item).strip() for item in override.get("related_discomforts", []) if str(item).strip()),
@@ -78,9 +98,9 @@ def _entry_from_article(article: Article, language: str, base_url: str, routes: 
 def build_link_entries(bundle: CatalogBundle, config: LinkRoutingConfig, language: str) -> tuple[LinkEntry, ...]:
     entries: list[LinkEntry] = []
     for product in bundle.products:
-        entries.append(
-            _entry_from_product(product, language, config.base_url, config.routes, config.product_overrides.get(product.slug, {}))
-        )
+        entry = _entry_from_product(product, language, config.base_url, config.routes, config.product_overrides.get(product.slug, {}))
+        if entry is not None:
+            entries.append(entry)
     for ingredient in bundle.ingredients:
         entries.append(
             _entry_from_ingredient(ingredient, language, config.base_url, config.routes, config.ingredient_overrides.get(ingredient.slug, {}))

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from app.i18n import normalize_localized_text
+from app.product_helper.catalog_links import normalize_catalog_links
 from app.product_helper.models import Article, CatalogBundle, Ingredient, Product
 
 
@@ -89,8 +90,15 @@ def load_catalog_bundle() -> CatalogBundle:
     for row in product_rows:
         if not isinstance(row, dict):
             continue
+        slug = str(row.get("slug", "")).strip()
+        product_links = normalize_catalog_links(
+            row.get("links"),
+            kind="product",
+            slug=slug,
+            warn_scope="catalog_product",
+        )
         product = Product(
-            slug=str(row.get("slug", "")).strip(),
+            slug=slug,
             name=normalize_localized_text(row.get("name", "")),
             tagline=normalize_localized_text(row.get("tagline", "")),
             summary=normalize_localized_text(row.get("summary", "")),
@@ -107,7 +115,8 @@ def load_catalog_bundle() -> CatalogBundle:
             target_users=_localized_list(row.get("target_users", "")),
             cautions=normalize_localized_text(row.get("cautions", "")),
             disclaimer=normalize_localized_text(row.get("disclaimer", "")),
-            buy_link=str(row.get("buy_link", "")).strip(),
+            links=product_links,
+            buy_link=product_links["en"],
             status=str(row.get("status", "active")).strip() or "active",
             images=_tuple_from(row.get("images", [])),
             extra_tags=_product_extra_tags(row),
@@ -119,8 +128,15 @@ def load_catalog_bundle() -> CatalogBundle:
     for row in ingredient_rows:
         if not isinstance(row, dict):
             continue
+        slug = str(row.get("slug", "")).strip()
+        ingredient_links = normalize_catalog_links(
+            row.get("links"),
+            kind="ingredient",
+            slug=slug,
+            warn_scope="catalog_ingredient",
+        )
         ingredient = Ingredient(
-            slug=str(row.get("slug", "")).strip(),
+            slug=slug,
             name=normalize_localized_text(row.get("name", "")),
             aliases=_localized_list(row.get("aliases", "")),
             summary=normalize_localized_text(row.get("summary", "")),
@@ -129,6 +145,7 @@ def load_catalog_bundle() -> CatalogBundle:
             flavor_profile=_localized_list(row.get("flavor_profile", "")),
             pairings=_tuple_from(row.get("pairings", [])),
             cautions=normalize_localized_text(row.get("cautions", "")),
+            links=ingredient_links,
             images=_tuple_from(row.get("images", [])),
         )
         if ingredient.slug:
@@ -140,12 +157,20 @@ def load_catalog_bundle() -> CatalogBundle:
             meta = _load_json_file(meta_path)
             if not isinstance(meta, dict):
                 continue
+            slug = str(meta.get("slug", meta_path.parent.name)).strip()
+            article_links = normalize_catalog_links(
+                meta.get("links"),
+                kind="article",
+                slug=slug,
+                warn_scope="catalog_article",
+            )
             article = Article(
-                slug=str(meta.get("slug", meta_path.parent.name)).strip(),
+                slug=slug,
                 title=normalize_localized_text(meta.get("title", "")),
                 excerpt=normalize_localized_text(meta.get("excerpt", "")),
                 category=normalize_localized_text(meta.get("category", "")),
                 tags=_localized_list(meta.get("tags", "")),
+                links=article_links,
                 cover_image=str(meta.get("coverImage", "")).strip(),
                 featured=bool(meta.get("featured", False)),
                 published_at=str(meta.get("publishedAt", "")).strip(),
