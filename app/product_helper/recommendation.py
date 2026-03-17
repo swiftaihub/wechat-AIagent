@@ -136,6 +136,9 @@ def rank_products(
             score += min(6.0, 2.0 * len(discomfort_hits))
 
         target_text = _normalized_text(product.target_users["zh"], product.target_users["en"], product.summary["zh"], product.summary["en"])
+        if any(cue in combined_text for cue in ("tired", "fatigue", "low energy", "slow recovery", "累", "疲劳", "恢复慢")):
+            if any(term in target_text for term in ("tired", "fatigue", "low energy", "slow recovery", "累", "疲劳", "恢复慢")):
+                score += 1.6
         for cue in ("fatigue", "恢复慢", "gift", "送礼", "dry", "dryness", "口干", "heavy", "困重", "bloating", "胀", "mood", "情绪", "sleep", "熬夜", "digestive", "饭后"):
             if cue in combined_text and cue in target_text:
                 score += 1.2

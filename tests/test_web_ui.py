@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.llm_core import ReplyOutcome
 from app.main import app, webui_base_path
-from app.web_ui import _build_html_page, _build_intake_payload_from_state, INTAKE_CONFIG
+from app.web_ui import WEB_UI_ASSET_DIR, _build_html_page, _build_intake_payload_from_state, INTAKE_CONFIG
 
 
 class WebUiTests(unittest.TestCase):
@@ -99,6 +99,12 @@ class WebUiTests(unittest.TestCase):
         self.assertFalse(resp.json()["ok"])
         self.assertTrue(resp.json()["blocked"])
         self.assertEqual(resp.json()["error_code"], "RATE_LIMITED")
+
+    def test_web_ui_js_supports_safe_markdown_link_rendering(self) -> None:
+        js = (WEB_UI_ASSET_DIR / "web_ui.js").read_text(encoding="utf-8")
+        self.assertIn("renderMessageHtml", js)
+        self.assertIn('target="_blank"', js)
+        self.assertIn("noopener noreferrer", js)
 
 
 if __name__ == "__main__":

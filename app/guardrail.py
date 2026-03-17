@@ -2,6 +2,7 @@ import re
 from dataclasses import dataclass
 
 from app.prompt_runtime import GuardrailSettings
+from app.text_trimming import smart_trim_to_limit
 
 
 @dataclass(frozen=True)
@@ -60,13 +61,11 @@ class GuardrailEngine:
             return self._settings.fallback_response
 
         if self._settings.max_output_chars > 0 and len(text) > self._settings.max_output_chars:
-            suffix = self._settings.trim_suffix
-            trim_to = self._settings.max_output_chars
-            if suffix:
-                trim_to = max(0, trim_to - len(suffix))
-                text = f"{text[:trim_to].rstrip()}{suffix}"
-            else:
-                text = text[:trim_to].rstrip()
+            text = smart_trim_to_limit(
+                text,
+                max_chars=self._settings.max_output_chars,
+                trim_suffix=self._settings.trim_suffix,
+            )
 
         return text or self._settings.fallback_response
 

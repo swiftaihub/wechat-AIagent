@@ -164,7 +164,7 @@ profiles:
 
 guardrail:
   enabled: true
-  max_output_chars: 900
+  max_output_chars: 2200
   blocked_response:
     zh: 这个请求需要换成更安全的回答方式。
     en: This request needs a safer response path.

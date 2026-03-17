@@ -1,10 +1,10 @@
 channels:
   wechat:
-    max_output_chars: 320
-    soft_target_chars: 220
+    max_output_chars: 420
+    soft_target_chars: 300
   web:
-    max_output_chars: 620
-    soft_target_chars: 380
+    max_output_chars: 1800
+    soft_target_chars: 1200
 
 shared:
   trim_suffix: …

@@ -94,7 +94,7 @@ def _normalize_base_url(raw: str, default: str) -> str:
 @lru_cache(maxsize=1)
 def get_runtime_config() -> RuntimeConfig:
     timeout_ms = _env_int("LLM_REQUEST_TIMEOUT_MS", 30000, minimum=1000)
-    max_output_tokens = _env_int("MAX_OUTPUT_TOKENS", 800, minimum=1)
+    max_output_tokens = _env_int("MAX_OUTPUT_TOKENS", 1200, minimum=1)
     session_ttl_seconds = _env_int(
         "PRODUCT_HELPER_SESSION_TTL_SECONDS",
         1800,
@@ -125,7 +125,7 @@ def get_runtime_config() -> RuntimeConfig:
     protection = UsageProtectionConfig(
         redis_url=os.getenv("REDIS_URL", "").strip(),
         rate_limit_window_seconds=_env_int("RATE_LIMIT_WINDOW_SECONDS", 60, minimum=1),
-        rate_limit_max_requests=_env_int("RATE_LIMIT_MAX_REQUESTS", 8, minimum=1),
+        rate_limit_max_requests=_env_int("RATE_LIMIT_MAX_REQUESTS", 10, minimum=1),
         rapid_abuse_block_minutes=_env_int("RAPID_ABUSE_BLOCK_MINUTES", 30, minimum=1),
         max_messages_per_user_session=_env_int("MAX_MESSAGES_PER_USER_SESSION", 20, minimum=1),
         user_session_cooldown_minutes=_env_int("USER_SESSION_COOLDOWN_MINUTES", 120, minimum=1),
