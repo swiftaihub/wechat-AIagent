@@ -5,6 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from app.product_helper.catalog_links import localized_catalog_link
 from app.product_helper.config import (
     ConstitutionConfig,
     KnowledgeBaseConfig,
@@ -91,11 +92,12 @@ def extract_recent_discomfort_option_values(config: HerbalAdviceConfig | None = 
 
 
 def assess_constitution_and_recommend_herbs(query: str, profile: dict[str, Any] | None = None, context: dict[str, Any] | None = None) -> dict[str, Any]:
+    preferred_language = (context or {}).get("preferred_language")
     service = get_product_helper_service()
     result = service.handle(
         user_id=str((context or {}).get("user_id", "tool-user")).strip() or "tool-user",
         text=query,
-        preferred_language=(context or {}).get("preferred_language"),
+        preferred_language=preferred_language,
         channel=str((context or {}).get("channel", "web")).strip() or "web",
         history_text=str((context or {}).get("recent_history", "")).strip(),
     )
@@ -122,7 +124,8 @@ def assess_constitution_and_recommend_herbs(query: str, profile: dict[str, Any] 
             "taste": recommendation.taste,
             "when_to_drink": recommendation.when_to_drink,
             "caution": recommendation.caution,
-            "buy_link": recommendation.product.buy_link,
+            "links": recommendation.product.links,
+            "buy_link": localized_catalog_link(recommendation.product.links, result.language) or recommendation.product.buy_link,
             "ingredients": list(recommendation.product.ingredients),
         }
         for recommendation in result.product_recommendations

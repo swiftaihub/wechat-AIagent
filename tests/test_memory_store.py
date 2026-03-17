@@ -51,7 +51,24 @@ class MemoryStoreTests(unittest.TestCase):
         self.assertIn("q3", history)
         self.assertIn("a3", history)
 
+    def test_recent_messages_and_rebuild_window_drop_last_assistant(self) -> None:
+        store = ConversationMemoryStore(
+            enabled=True,
+            max_turns=3,
+            ttl_seconds=1800,
+            max_message_chars=200,
+            max_history_chars=800,
+        )
+        store.add_exchange(user_id="u1", user_text="q1", assistant_text="a1", now_ts=10)
+        store.add_exchange(user_id="u1", user_text="q2", assistant_text="a2", now_ts=20)
+
+        messages = store.recent_messages(user_id="u1", now_ts=21)
+        self.assertEqual([message.role for message in messages], ["user", "assistant", "user", "assistant"])
+
+        rebuilt = store.rebuild_window(user_id="u1", keep_turns=2, drop_last_assistant=True, now_ts=21)
+        self.assertEqual([message.role for message in rebuilt], ["user", "assistant", "user"])
+        self.assertEqual(rebuilt[-1].content, "q2")
+
 
 if __name__ == "__main__":
     unittest.main()
-

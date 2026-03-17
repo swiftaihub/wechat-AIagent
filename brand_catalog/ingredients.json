@@ -57,7 +57,11 @@
     "images": [
       "/images/ingredients/astragalus/raw.jpg",
       "/images/ingredients/astragalus/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/astragalus",
+      "en": "https://tea.swiftaihub.com/en/ingredients/astragalus"
+    }
   },
   {
     "slug": "red-date",
@@ -118,7 +122,11 @@
     "images": [
       "/images/ingredients/red-date/raw.jpg",
       "/images/ingredients/red-date/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/red-date",
+      "en": "https://tea.swiftaihub.com/en/ingredients/red-date"
+    }
   },
   {
     "slug": "goji",
@@ -176,7 +184,11 @@
     "images": [
       "/images/ingredients/goji/raw.jpg",
       "/images/ingredients/goji/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/goji",
+      "en": "https://tea.swiftaihub.com/en/ingredients/goji"
+    }
   },
   {
     "slug": "chenpi",
@@ -237,7 +249,11 @@
     "images": [
       "/images/ingredients/chenpi/raw.jpg",
       "/images/ingredients/chenpi/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/chenpi",
+      "en": "https://tea.swiftaihub.com/en/ingredients/chenpi"
+    }
   },
   {
     "slug": "poria",
@@ -298,7 +314,11 @@
     "images": [
       "/images/ingredients/poria/raw.jpg",
       "/images/ingredients/poria/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/poria",
+      "en": "https://tea.swiftaihub.com/en/ingredients/poria"
+    }
   },
   {
     "slug": "longan",
@@ -357,7 +377,11 @@
     "images": [
       "/images/ingredients/longan/raw.jpg",
       "/images/ingredients/longan/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/longan",
+      "en": "https://tea.swiftaihub.com/en/ingredients/longan"
+    }
   },
   {
     "slug": "ginger",
@@ -416,7 +440,11 @@
     "images": [
       "/images/ingredients/ginger/raw.jpg",
       "/images/ingredients/ginger/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/ginger",
+      "en": "https://tea.swiftaihub.com/en/ingredients/ginger"
+    }
   },
   {
     "slug": "american-ginseng",
@@ -476,7 +504,11 @@
     "images": [
       "/images/ingredients/american-ginseng/raw.jpg",
       "/images/ingredients/american-ginseng/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/american-ginseng",
+      "en": "https://tea.swiftaihub.com/en/ingredients/american-ginseng"
+    }
   },
   {
     "slug": "maidong",
@@ -537,7 +569,11 @@
     "images": [
       "/images/ingredients/maidong/raw.jpg",
       "/images/ingredients/maidong/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/maidong",
+      "en": "https://tea.swiftaihub.com/en/ingredients/maidong"
+    }
   },
   {
     "slug": "yuzhu",
@@ -597,7 +633,11 @@
     "images": [
       "/images/ingredients/yuzhu/raw.jpg",
       "/images/ingredients/yuzhu/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/yuzhu",
+      "en": "https://tea.swiftaihub.com/en/ingredients/yuzhu"
+    }
   },
   {
     "slug": "chrysanthemum",
@@ -656,7 +696,11 @@
     "images": [
       "/images/ingredients/chrysanthemum/raw.jpg",
       "/images/ingredients/chrysanthemum/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/chrysanthemum",
+      "en": "https://tea.swiftaihub.com/en/ingredients/chrysanthemum"
+    }
   },
   {
     "slug": "honeysuckle",
@@ -715,7 +759,11 @@
     "images": [
       "/images/ingredients/honeysuckle/raw.jpg",
       "/images/ingredients/honeysuckle/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/honeysuckle",
+      "en": "https://tea.swiftaihub.com/en/ingredients/honeysuckle"
+    }
   },
   {
     "slug": "rose",
@@ -776,7 +824,11 @@
     "images": [
       "/images/ingredients/rose/raw.jpg",
       "/images/ingredients/rose/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/rose",
+      "en": "https://tea.swiftaihub.com/en/ingredients/rose"
+    }
   },
   {
     "slug": "fo-shou",
@@ -835,7 +887,11 @@
     "images": [
       "/images/ingredients/fo-shou/raw.jpg",
       "/images/ingredients/fo-shou/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/fo-shou",
+      "en": "https://tea.swiftaihub.com/en/ingredients/fo-shou"
+    }
   },
   {
     "slug": "hawthorn",
@@ -895,7 +951,11 @@
     "images": [
       "/images/ingredients/hawthorn/raw.jpg",
       "/images/ingredients/hawthorn/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/hawthorn",
+      "en": "https://tea.swiftaihub.com/en/ingredients/hawthorn"
+    }
   },
   {
     "slug": "huangjing",
@@ -956,7 +1016,11 @@
     "images": [
       "/images/ingredients/huangjing/raw.jpg",
       "/images/ingredients/huangjing/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/huangjing",
+      "en": "https://tea.swiftaihub.com/en/ingredients/huangjing"
+    }
   },
   {
     "slug": "saffron",
@@ -1015,7 +1079,11 @@
     "images": [
       "/images/ingredients/saffron/raw.jpg",
       "/images/ingredients/saffron/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/saffron",
+      "en": "https://tea.swiftaihub.com/en/ingredients/saffron"
+    }
   },
   {
     "slug": "cordyceps",
@@ -1075,6 +1143,10 @@
     "images": [
       "/images/ingredients/cordyceps/raw.jpg",
       "/images/ingredients/cordyceps/brew.jpg"
-    ]
+    ],
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/ingredients/cordyceps",
+      "en": "https://tea.swiftaihub.com/en/ingredients/cordyceps"
+    }
   }
 ]

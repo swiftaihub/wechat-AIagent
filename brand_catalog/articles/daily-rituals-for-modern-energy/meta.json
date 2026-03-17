@@ -13,13 +13,32 @@
     "zh": "日常养护"
   },
   "tags": {
-    "en": ["Morning rhythm", "Energy", "Placeholder"],
-    "zh": ["晨间节奏", "元气", "占位内容"]
+    "en": [
+      "Morning rhythm",
+      "Energy",
+      "Placeholder"
+    ],
+    "zh": [
+      "晨间节奏",
+      "元气",
+      "占位内容"
+    ]
   },
   "coverImage": "/images/articles/daily-wellness.jpg",
   "featured": true,
   "publishedAt": "2026-03-14",
   "readingTheme": "serif",
-  "relatedProducts": ["zaoxi-vitality-tea", "amber-silk-restore-tea"],
-  "relatedIngredients": ["astragalus", "red-date", "goji"]
+  "relatedProducts": [
+    "zaoxi-vitality-tea",
+    "amber-silk-restore-tea"
+  ],
+  "relatedIngredients": [
+    "astragalus",
+    "red-date",
+    "goji"
+  ],
+  "links": {
+    "zh": "https://tea.swiftaihub.com/zh/articles/daily-rituals-for-modern-energy",
+    "en": "https://tea.swiftaihub.com/en/articles/daily-rituals-for-modern-energy"
+  }
 }

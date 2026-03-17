@@ -78,8 +78,12 @@
       "/images/products/huangqi-red-date-goji-energy-tea/main.jpg",
       "/images/products/huangqi-red-date-goji-energy-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/huangqi-red-date-goji-energy-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/zaoxi-vitality-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/zaoxi-vitality-tea",
+      "en": "https://tea.swiftaihub.com/en/products/zaoxi-vitality-tea"
+    }
   },
   {
     "slug": "citrus-cloud-harmony-tea",
@@ -160,8 +164,12 @@
       "/images/products/huangqi-chenpi-poria-light-qi-tea/main.jpg",
       "/images/products/huangqi-chenpi-poria-light-qi-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/huangqi-chenpi-poria-light-qi-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/citrus-cloud-harmony-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/citrus-cloud-harmony-tea",
+      "en": "https://tea.swiftaihub.com/en/products/citrus-cloud-harmony-tea"
+    }
   },
   {
     "slug": "rosy-glow-nourish-tea",
@@ -241,8 +249,12 @@
       "/images/products/longan-red-date-goji-blood-tonic-tea/main.jpg",
       "/images/products/longan-red-date-goji-blood-tonic-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/longan-red-date-goji-blood-tonic-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/rosy-glow-nourish-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/rosy-glow-nourish-tea",
+      "en": "https://tea.swiftaihub.com/en/products/rosy-glow-nourish-tea"
+    }
   },
   {
     "slug": "amber-hearth-warming-tea",
@@ -322,8 +334,12 @@
       "/images/products/ginger-red-date-chenpi-warm-stomach-tea/main.jpg",
       "/images/products/ginger-red-date-chenpi-warm-stomach-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/ginger-red-date-chenpi-warm-stomach-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/amber-hearth-warming-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/amber-hearth-warming-tea",
+      "en": "https://tea.swiftaihub.com/en/products/amber-hearth-warming-tea"
+    }
   },
   {
     "slug": "dewlight-replenish-tea",
@@ -403,8 +419,12 @@
       "/images/products/american-ginseng-maidong-goji-moisture-tea/main.jpg",
       "/images/products/american-ginseng-maidong-goji-moisture-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/american-ginseng-maidong-goji-moisture-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/dewlight-replenish-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/dewlight-replenish-tea",
+      "en": "https://tea.swiftaihub.com/en/products/dewlight-replenish-tea"
+    }
   },
   {
     "slug": "moon-dew-night-restore-tea",
@@ -483,8 +503,12 @@
       "/images/products/yuzhu-maidong-goji-night-recovery-tea/main.jpg",
       "/images/products/yuzhu-maidong-goji-night-recovery-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/yuzhu-maidong-goji-night-recovery-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/moon-dew-night-restore-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/moon-dew-night-restore-tea",
+      "en": "https://tea.swiftaihub.com/en/products/moon-dew-night-restore-tea"
+    }
   },
   {
     "slug": "golden-bloom-clear-gaze-tea",
@@ -563,8 +587,12 @@
       "/images/products/goji-chrysanthemum-eye-comfort-tea/main.jpg",
       "/images/products/goji-chrysanthemum-eye-comfort-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/goji-chrysanthemum-eye-comfort-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/golden-bloom-clear-gaze-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/golden-bloom-clear-gaze-tea",
+      "en": "https://tea.swiftaihub.com/en/products/golden-bloom-clear-gaze-tea"
+    }
   },
   {
     "slug": "golden-dew-balance-tea",
@@ -643,8 +671,12 @@
       "/images/products/honeysuckle-chrysanthemum-cool-balance-tea/main.jpg",
       "/images/products/honeysuckle-chrysanthemum-cool-balance-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/honeysuckle-chrysanthemum-cool-balance-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/golden-dew-balance-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/golden-dew-balance-tea",
+      "en": "https://tea.swiftaihub.com/en/products/golden-dew-balance-tea"
+    }
   },
   {
     "slug": "citrus-rose-ease-tea",
@@ -723,8 +755,12 @@
       "/images/products/rose-chenpi-fo-shou-mood-ease-tea/main.jpg",
       "/images/products/rose-chenpi-fo-shou-mood-ease-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/rose-chenpi-fo-shou-mood-ease-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/citrus-rose-ease-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/citrus-rose-ease-tea",
+      "en": "https://tea.swiftaihub.com/en/products/citrus-rose-ease-tea"
+    }
   },
   {
     "slug": "amber-orchard-digest-tea",
@@ -804,8 +840,12 @@
       "/images/products/hawthorn-chenpi-poria-digest-tea/main.jpg",
       "/images/products/hawthorn-chenpi-poria-digest-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/hawthorn-chenpi-poria-digest-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/amber-orchard-digest-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/amber-orchard-digest-tea",
+      "en": "https://tea.swiftaihub.com/en/products/amber-orchard-digest-tea"
+    }
   },
   {
     "slug": "amber-silk-restore-tea",
@@ -886,8 +926,12 @@
       "/images/products/huangjing-goji-restorative-tea/main.jpg",
       "/images/products/huangjing-goji-restorative-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/huangjing-goji-restorative-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/amber-silk-restore-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/amber-silk-restore-tea",
+      "en": "https://tea.swiftaihub.com/en/products/amber-silk-restore-tea"
+    }
   },
   {
     "slug": "crimson-gold-radiance-tea",
@@ -966,8 +1010,12 @@
       "/images/products/saffron-goji-rose-circulation-tea/main.jpg",
       "/images/products/saffron-goji-rose-circulation-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/saffron-goji-rose-circulation-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/crimson-gold-radiance-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/crimson-gold-radiance-tea",
+      "en": "https://tea.swiftaihub.com/en/products/crimson-gold-radiance-tea"
+    }
   },
   {
     "slug": "gilded-cordyceps-reserve-tea",
@@ -1049,7 +1097,11 @@
       "/images/products/cordyceps-ginseng-polygonatum-premium-tea/main.jpg",
       "/images/products/cordyceps-ginseng-polygonatum-premium-tea/lifestyle-1.jpg"
     ],
-    "buy_link": "https://your-store.com/products/cordyceps-ginseng-polygonatum-premium-tea",
-    "status": "active"
+    "buy_link": "https://tea.swiftaihub.com/en/products/gilded-cordyceps-reserve-tea",
+    "status": "active",
+    "links": {
+      "zh": "https://tea.swiftaihub.com/zh/products/gilded-cordyceps-reserve-tea",
+      "en": "https://tea.swiftaihub.com/en/products/gilded-cordyceps-reserve-tea"
+    }
   }
 ]

@@ -26,10 +26,49 @@ OUT_OF_SCOPE_PATTERNS = (
     "税务",
     "法律",
 )
+MATH_HINTS = (
+    "percent markdown",
+    "percent off",
+    "markdown percentage",
+    "discount percentage",
+    "discount rate",
+    "original price",
+    "sale price",
+    "what percent",
+    "solve this math",
+    "math problem",
+    "原价",
+    "现价",
+    "折扣",
+    "打几折",
+    "百分比",
+    "数学题",
+    "算一下",
+)
+GENERAL_TRIVIA_HINTS = (
+    "capital of",
+    "president",
+    "prime minister",
+    "weather",
+    "nba",
+    "nfl",
+    "movie review",
+    "who won",
+    "translation",
+    "translate this",
+    "首都",
+    "总统",
+    "总理",
+    "天气",
+    "比赛",
+    "翻译",
+)
 SYMPTOM_HINTS = (
     "疲劳",
     "累",
     "恢复慢",
+    "tired",
+    "low energy",
     "dry",
     "dryness",
     "staying up late",
@@ -45,10 +84,17 @@ SYMPTOM_HINTS = (
 GIFT_HINTS = (
     "gift",
     "gifting",
+    "gift tea",
+    "tea gift",
+    "tea gift box",
     "送礼",
     "礼物",
+    "茶礼",
+    "茶礼盒",
+    "礼盒",
     "送给",
     "送妈妈",
+    "送长辈",
     "送女生",
     "送女朋友",
     "送闺蜜",
@@ -62,6 +108,7 @@ GIFT_HINTS = (
     "女朋友",
     "闺蜜",
     "recipient",
+    "for mom",
     "for my mom",
     "for her",
     "girlfriend",
@@ -87,8 +134,11 @@ PRODUCT_DETAIL_HINTS = (
     "配方",
     "里面都有什么",
     "里面有什么",
+    "ingredients",
     "what is in",
+    "what ingredients are in",
     "what's in",
+    "each ingredient",
     "是什么口感",
     "什么口感",
     "喝起来",
@@ -150,6 +200,41 @@ PRODUCT_LIST_HINTS = (
     "all products",
     "full lineup",
 )
+CASUAL_HINTS = (
+    "hi",
+    "hello",
+    "hey",
+    "thanks",
+    "thank you",
+    "how are you",
+    "who are you",
+    "what can you do",
+    "help",
+    "你好",
+    "嗨",
+    "哈喽",
+    "谢谢",
+    "多谢",
+    "你在吗",
+    "你是谁",
+    "你能做什么",
+)
+BRAND_SCOPE_HINTS = (
+    "brand",
+    "site",
+    "catalog",
+    "article",
+    "products",
+    "ingredients",
+    "tea",
+    "wellness",
+    "草本茶",
+    "产品",
+    "原料",
+    "内容",
+    "品牌",
+    "养生",
+)
 
 
 def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
@@ -165,8 +250,34 @@ class IntentRoute:
     mentioned_ingredients: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class DomainClassification:
+    label: str
+    allowed: bool
+    reason: str
+
+
 def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", str(text or "").strip().lower())
+
+
+def _looks_like_math_problem(normalized: str) -> bool:
+    if _contains_any(normalized, MATH_HINTS):
+        return True
+    return bool(
+        re.search(r"\b\d+(?:\.\d+)?\s*[%+\-*/x×÷]\s*\d+(?:\.\d+)?\b", normalized)
+        or re.search(r"\bwhat is \d+(?:\.\d+)?\s*[+\-*/x×÷]\s*\d+(?:\.\d+)?\b", normalized)
+    )
+
+
+def _looks_like_casual_conversation(normalized: str) -> bool:
+    return _contains_any(normalized, CASUAL_HINTS)
+
+
+def _looks_like_brand_scope_chat(normalized: str) -> bool:
+    if _looks_like_casual_conversation(normalized):
+        return True
+    return _contains_any(normalized, BRAND_SCOPE_HINTS)
 
 
 def _looks_like_wellness_education(
@@ -246,7 +357,9 @@ def route_intent(
     normalized = _normalize_text(text)
     products, ingredients = _mentioned_slugs(text)
 
-    if any(keyword in normalized for keyword in OUT_OF_SCOPE_PATTERNS):
+    if any(keyword in normalized for keyword in OUT_OF_SCOPE_PATTERNS) or (
+        _looks_like_math_problem(normalized) and not (products or ingredients)
+    ):
         return IntentRoute("out_of_scope", "fallback_safe", "", products, ingredients)
 
     if len(products) >= 2 or (products and _contains_any(normalized, COMPARE_HINTS)):
@@ -304,4 +417,59 @@ def route_intent(
                 ingredients,
             )
 
-    return IntentRoute("general_brand_scope_qna", "brand_scope_faq", "daily_wellness", products, ingredients)
+    if _looks_like_brand_scope_chat(normalized):
+        return IntentRoute("general_brand_scope_qna", "brand_scope_faq", "daily_wellness", products, ingredients)
+
+    return IntentRoute("out_of_scope", "fallback_safe", "", products, ingredients)
+
+
+def classify_domain_intent(
+    *,
+    text: str,
+    route: IntentRoute,
+) -> DomainClassification:
+    normalized = _normalize_text(text)
+
+    if _looks_like_math_problem(normalized):
+        return DomainClassification(label="OUT_OF_SCOPE", allowed=False, reason="math_or_discount")
+
+    if _contains_any(normalized, OUT_OF_SCOPE_PATTERNS):
+        return DomainClassification(label="OUT_OF_SCOPE", allowed=False, reason="non_domain_task")
+
+    if _contains_any(normalized, GENERAL_TRIVIA_HINTS):
+        return DomainClassification(label="OUT_OF_SCOPE", allowed=False, reason="general_trivia")
+
+    if _looks_like_casual_conversation(normalized):
+        return DomainClassification(label="CASUAL_CONVERSATION", allowed=True, reason="casual_chat")
+
+    if route.intent == "out_of_scope":
+        return DomainClassification(label="OUT_OF_SCOPE", allowed=False, reason="unsupported_topic")
+
+    if route.intent in {"ingredient_explanation"} or (
+        route.intent == "product_detail"
+        and _contains_any(normalized, ("ingredient", "ingredients", "原料", "原材料", "成分", "配方", "每个原料", "what is in", "what ingredients are in"))
+    ):
+        return DomainClassification(label="INGREDIENT_QUERY", allowed=True, reason="ingredient_grounded")
+
+    if route.intent in {
+        "product_recommendation_direct",
+        "gifting_recommendation",
+        "compare_products",
+        "product_catalog_request",
+        "product_detail",
+        "symptom_or_discomfort_guidance",
+    }:
+        return DomainClassification(label="PRODUCT_RECOMMENDATION", allowed=True, reason="product_or_purchase_guidance")
+
+    if route.intent in {
+        "constitution_guidance",
+        "wellness_education_in_scope",
+        "brewing_or_usage_question",
+        "article_request",
+    }:
+        return DomainClassification(label="WELLNESS_QUESTION", allowed=True, reason="wellness_domain")
+
+    if route.intent == "general_brand_scope_qna" and _looks_like_brand_scope_chat(normalized):
+        return DomainClassification(label="CASUAL_CONVERSATION", allowed=True, reason="brand_scope_chat")
+
+    return DomainClassification(label="OUT_OF_SCOPE", allowed=False, reason="strict_domain_fallback")

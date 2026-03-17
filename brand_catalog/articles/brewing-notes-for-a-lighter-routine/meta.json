@@ -13,13 +13,34 @@
     "zh": "冲泡指南"
   },
   "tags": {
-    "en": ["Brewing", "Ritual", "Placeholder"],
-    "zh": ["冲泡", "仪式感", "占位内容"]
+    "en": [
+      "Brewing",
+      "Ritual",
+      "Placeholder"
+    ],
+    "zh": [
+      "冲泡",
+      "仪式感",
+      "占位内容"
+    ]
   },
   "coverImage": "/images/articles/brewing-guide.jpg",
   "featured": true,
   "publishedAt": "2026-03-10",
   "readingTheme": "sans",
-  "relatedProducts": ["golden-bloom-clear-gaze-tea", "golden-dew-balance-tea", "moon-dew-night-restore-tea"],
-  "relatedIngredients": ["chrysanthemum", "honeysuckle", "maidong", "yuzhu"]
+  "relatedProducts": [
+    "golden-bloom-clear-gaze-tea",
+    "golden-dew-balance-tea",
+    "moon-dew-night-restore-tea"
+  ],
+  "relatedIngredients": [
+    "chrysanthemum",
+    "honeysuckle",
+    "maidong",
+    "yuzhu"
+  ],
+  "links": {
+    "zh": "https://tea.swiftaihub.com/zh/articles/brewing-notes-for-a-lighter-routine",
+    "en": "https://tea.swiftaihub.com/en/articles/brewing-notes-for-a-lighter-routine"
+  }
 }
