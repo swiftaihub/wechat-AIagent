@@ -58,6 +58,7 @@ Override them with:
 - `ARTICLE_CONTENT_ROOT`
 
 If you deploy via Docker, the bundled `brand_catalog` snapshot is copied into the image automatically, so the helper no longer depends on the sibling repo being mounted at runtime.
+The repo now expects standard cloud exposure through a reverse proxy, load balancer, or platform ingress rather than a bundled Cloudflare Tunnel sidecar.
 
 ## Config Contracts
 
@@ -172,6 +173,7 @@ Legacy files like `app/tools/advice_table.py` remain only as historical scaffold
 - Keep private config values in local or environment-managed `.private.yaml` files.
 - For WeChat, continue using the same `GET /wechat` and `POST /wechat` callback flow.
 - For web embedding, use `WEBUI_BASE_PATH` and `WEBUI_CORS_ALLOWED_ORIGINS` as needed.
+- `docker-compose.yml` now starts only the application container. Expose it with Nginx, a cloud load balancer, or your platform ingress.
 - If you want the helper links to point at a deployed storefront, update `base_url` in `config/link_index.private.yaml`.
 - For production, keep `DASHSCOPE_API_KEY` in your secret manager and leave it out of repo, logs, tests, and screenshots.
 - For production, prefer Redis-backed protection state if you run more than one application process or container.
