@@ -20,17 +20,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: cloudflared
-    command: tunnel run openclaw-wechat-mp
-    depends_on:
-      - wechat-mp
-    volumes:
-      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
-      - ./cloudflared/credentials.json:/etc/cloudflared/credentials.json:ro
-    restart: unless-stopped
-    read_only: true
-    tmpfs:
-      - /tmp

@@ -1,4 +1,4 @@
-Write-Host "Starting Docker services..."
+Write-Host "Starting application container..."
 docker compose up -d --build
 
-Write-Host "All services started."
+Write-Host "Application container started."

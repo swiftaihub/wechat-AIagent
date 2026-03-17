@@ -1,4 +1,4 @@
-Write-Host "Stopping Docker services..."
+Write-Host "Stopping application container..."
 docker compose down
 
-Write-Host "All services stopped."
+Write-Host "Application container stopped."
