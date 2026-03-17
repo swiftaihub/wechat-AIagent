@@ -27,6 +27,7 @@ class Product:
     target_users: LocalizedText
     cautions: LocalizedText
     disclaimer: LocalizedText
+    links: LocalizedText
     buy_link: str
     status: str
     images: tuple[str, ...] = ()
@@ -44,6 +45,7 @@ class Ingredient:
     flavor_profile: LocalizedText
     pairings: tuple[str, ...]
     cautions: LocalizedText
+    links: LocalizedText
     images: tuple[str, ...] = ()
 
 
@@ -54,6 +56,7 @@ class Article:
     excerpt: LocalizedText
     category: LocalizedText
     tags: LocalizedText
+    links: LocalizedText
     cover_image: str
     featured: bool
     published_at: str
@@ -127,6 +130,9 @@ class SessionState:
     intake: dict[str, Any] = field(default_factory=dict)
     current_use_case: str = ""
     current_intent: str = ""
+    pending_action: str = ""
+    pending_context: dict[str, Any] = field(default_factory=dict)
+    last_user_need: str = ""
     shortlisted_products: list[str] = field(default_factory=list)
     shortlisted_ingredients: list[str] = field(default_factory=list)
     last_constitutions: list[str] = field(default_factory=list)

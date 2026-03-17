@@ -21,7 +21,7 @@ class PromptProfile:
 @dataclass(frozen=True)
 class GuardrailSettings:
     enabled: bool = True
-    max_output_chars: int = 900
+    max_output_chars: int = 2200
     blocked_input_patterns: tuple[str, ...] = ()
     blocked_output_patterns: tuple[str, ...] = ()
     redaction_patterns: tuple[str, ...] = ()
@@ -209,7 +209,7 @@ def _to_guardrail_settings(raw_guardrail: Any) -> GuardrailSettings:
             raise ValueError(f"guardrail.{key} must be a list.")
         return tuple(str(item).strip() for item in values if str(item).strip())
 
-    max_output_chars = int(raw_guardrail.get("max_output_chars", 900))
+    max_output_chars = int(raw_guardrail.get("max_output_chars", 2200))
     if max_output_chars < 0:
         raise ValueError("guardrail.max_output_chars must be >= 0.")
 
